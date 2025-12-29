@@ -1,0 +1,174 @@
+{% extends 'theme/base.html' %}
+
+{% block title %}Schedule New Event or Meeting{% endblock %}
+
+{% block page_title %}Schedule a New Event or Meeting{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto mb-[50px]" x-data="{ formType: '{{ form.form_type.value|default:"event" }}' }">
+    <!-- Form Card -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200/60 overflow-hidden">
+        <div class="px-6 py-4 bg-gray-50/80 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Event/Meeting Information</h3>
+        </div>
+        
+        <form method="post" class="p-6">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            
+            <!-- Form Type Selection -->
+            <div class="mb-6 pb-6 border-b border-gray-200">
+                <label class="block text-sm font-medium text-gray-700 mb-3">{{ form.form_type.label }}</label>
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="relative flex cursor-pointer">
+                        <input type="radio" name="form_type" value="event" {% if form.form_type.value == 'event' or not form.form_type.value %}checked{% endif %} @change="formType = 'event'" class="sr-only peer">
+                        <div class="w-full p-4 border-2 border-gray-200 rounded-lg peer-checked:border-indigo-500 peer-checked:bg-indigo-50 text-center transition-all">
+                            <span class="text-sm font-semibold text-gray-700 peer-checked:text-indigo-700">Event</span>
+                        </div>
+                    </label>
+                    <label class="relative flex cursor-pointer">
+                        <input type="radio" name="form_type" value="meeting" {% if form.form_type.value == 'meeting' %}checked{% endif %} @change="formType = 'meeting'" class="sr-only peer">
+                        <div class="w-full p-4 border-2 border-gray-200 rounded-lg peer-checked:border-indigo-500 peer-checked:bg-indigo-50 text-center transition-all">
+                            <span class="text-sm font-semibold text-gray-700 peer-checked:text-indigo-700">Meeting</span>
+                        </div>
+                    </label>
+                </div>
+                {{ form.form_type.errors }}
+            </div>
+            
+            <div class="space-y-6">
+                <!-- Title Field (Common) -->
+                <div>
+                    <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.title.label }}</label>
+                    {{ form.title }}
+                    {{ form.title.errors }}
+                </div>
+
+                <!-- Event-specific fields (shown when form_type = 'event') -->
+                <div x-show="formType === 'event'" x-transition>
+                    <!-- Description Field -->
+                    <div>
+                        <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.description.label }}</label>
+                        {{ form.description }}
+                        {{ form.description.errors }}
+                    </div>
+
+                    <!-- Location Field -->
+                    <div>
+                        <label for="{{ form.location.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.location.label }}</label>
+                        {{ form.location }}
+                        {{ form.location.errors }}
+                    </div>
+
+                    <!-- Event Type, Status, and Agenda -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="{{ form.event_type.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.event_type.label }}</label>
+                            {{ form.event_type }}
+                            {{ form.event_type.errors }}
+                        </div>
+                        <div>
+                            <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.status.label }}</label>
+                            {{ form.status }}
+                            {{ form.status.errors }}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="{{ form.agenda.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.agenda.label }}</label>
+                        {{ form.agenda }}
+                        {{ form.agenda.errors }}
+                    </div>
+
+                    <!-- Event Date & Time Fields -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div>
+                            <label for="{{ form.start_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                            {{ form.start_date }}
+                            {{ form.start_date.errors }}
+                        </div>
+                        <div>
+                            <label for="{{ form.start_time.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                            {{ form.start_time }}
+                            {{ form.start_time.errors }}
+                        </div>
+                        <div>
+                            <label for="{{ form.end_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">End Date <span class="text-gray-600">(Opt)</span></label>
+                            {{ form.end_date }}
+                            {{ form.end_date.errors }}
+                        </div>
+                        <div>
+                            <label for="{{ form.end_time.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">End Time <span class="text-gray-600">(Opt)</span></label>
+                            {{ form.end_time }}
+                            {{ form.end_time.errors }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Meeting-specific fields (shown when form_type = 'meeting') -->
+                <div x-show="formType === 'meeting'" x-transition style="display: none;">
+                    <!-- Meeting Date & Time -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="{{ form.meeting_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Meeting Date</label>
+                            {{ form.meeting_date }}
+                            {{ form.meeting_date.errors }}
+                        </div>
+                        <div>
+                            <label for="{{ form.meeting_start_time.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                            {{ form.meeting_start_time }}
+                            {{ form.meeting_start_time.errors }}
+                        </div>
+                    </div>
+
+                    <!-- Duration -->
+                    <div>
+                        <label for="{{ form.duration.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.duration.label }}</label>
+                        {{ form.duration }}
+                        {{ form.duration.errors }}
+                    </div>
+
+                    <!-- Meeting Type -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.meeting_type.label }}</label>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            {% for radio in form.meeting_type %}
+                            <label class="relative flex cursor-pointer">
+                                {{ radio.tag }}
+                                <div class="w-full p-3 border-2 border-gray-200 rounded-lg peer-checked:border-indigo-500 peer-checked:bg-indigo-50 text-center">
+                                    <span class="text-sm font-semibold text-gray-900">{{ radio.choice_label }}</span>
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        {{ form.meeting_type.errors }}
+                    </div>
+                </div>
+
+                <!-- Participants Checkboxes (Common) -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.participants.label }}</label>
+                    <div class="max-h-48 overflow-y-auto bg-white border border-gray-300 rounded-lg p-3 space-y-2">
+                        {% for checkbox in form.participants %}
+                            <label for="{{ checkbox.id_for_label }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-100 cursor-pointer">
+                                {{ checkbox.tag }}
+                                <span class="text-sm font-medium text-gray-700">{{ checkbox.choice_label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {{ form.participants.errors }}
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="pt-8 mt-6 border-t border-gray-200 flex justify-end gap-3">
+                <a href="{% url 'meeting_list' %}" class="py-2 px-4 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50">Cancel</a>
+                <button type="submit" class="py-2 px-4 border border-transparent rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700">
+                    Create Event/Meeting
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

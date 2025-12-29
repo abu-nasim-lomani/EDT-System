@@ -1,0 +1,88 @@
+{% extends 'theme/base.html' %}
+
+{% block title %}Projects{% endblock %}
+{% block page_title %}Projects{% endblock %}
+
+{% block content %}
+<div class="space-y-8 mb-[50px]">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">All Projects</h2>
+            <p class="text-sm text-gray-500 mt-1">Manage and track your projects</p>
+        </div>
+        {% if request.user.is_superuser or request.user.role == 'MANAGEMENT' or request.user.role == 'MANAGER' and request.user.department == 'Project Management' %}
+        <a href="{% url 'project_create' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+            <i class="fa-solid fa-plus mr-2"></i>New Project
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Projects Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for item in projects %}
+        {% with project=item.project %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex-1">
+                    <h3 class="text-lg font-bold text-gray-900 mb-1">
+                        <a href="{% url 'project_detail' project.pk %}" class="hover:text-indigo-600">{{ project.title }}</a>
+                    </h3>
+                    {% if project.description %}
+                    <p class="text-sm text-gray-500 line-clamp-2">{{ project.description|truncatewords:15 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="space-y-3 mb-4">
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fa-solid fa-user-tie mr-2 text-indigo-500"></i>
+                    <span>Manager: {{ project.project_manager.username|default:"Unassigned" }}</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fa-solid fa-calendar mr-2 text-blue-500"></i>
+                    <span>{{ project.start_date|date:"M d, Y" }} - {{ project.end_date|date:"M d, Y" }}</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fa-solid fa-users mr-2 text-green-500"></i>
+                    <span>{{ project.project_employees.count }} team members</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fa-solid fa-tasks mr-2 text-yellow-500"></i>
+                    <span>{{ project.tasks.count }} tasks</span>
+                </div>
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fa-solid fa-calendar-check mr-2 text-purple-500"></i>
+                    <span>{{ item.event_count }} events</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                <a href="{% url 'project_detail' project.pk %}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                    View Details <i class="fa-solid fa-arrow-right ml-1"></i>
+                </a>
+                    {% if request.user.is_superuser or request.user.role == 'MANAGEMENT' or project.project_manager == request.user %}
+                <div class="flex items-center space-x-2">
+                    <a href="{% url 'project_update' project.pk %}" class="text-gray-500 hover:text-indigo-600">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endwith %}
+        {% empty %}
+        <div class="col-span-full text-center py-12">
+            <i class="fa-solid fa-folder-open text-5xl text-gray-300 mb-4"></i>
+            <p class="text-gray-500 text-lg">No projects found.</p>
+            {% if request.user.is_superuser or request.user.role == 'MANAGEMENT' or request.user.role == 'MANAGER' and request.user.department == 'Project Management' %}
+            <a href="{% url 'project_create' %}" class="mt-4 inline-block bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                Create Your First Project
+            </a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+

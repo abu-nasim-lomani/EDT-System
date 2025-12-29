@@ -1,0 +1,102 @@
+{% extends 'theme/base.html' %}
+
+{% block title %}Today's ToDo List{% endblock %}
+{% block page_title %}Today's ToDo List{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6 mb-[50px]">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Today's Schedule</h1>
+                <p class="text-sm text-gray-500 mt-1">{{ today|date:"l, F d, Y" }}</p>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-gray-500">Total Items</p>
+                <p class="text-3xl font-bold text-indigo-600">{{ todo_items|length }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ToDo Items -->
+    {% if todo_items %}
+    <div class="space-y-4">
+        {% for item in todo_items %}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-start space-x-4">
+                <div class="flex-shrink-0">
+                    {% if item.type == 'event' %}
+                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                        <i class="fa-solid fa-calendar-check text-blue-600 text-xl"></i>
+                    </div>
+                    {% else %}
+                    <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                        <i class="fa-solid fa-tasks text-green-600 text-xl"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="flex-1">
+                    <div class="flex items-center justify-between mb-2">
+                        <div>
+                            <span class="text-xs font-medium px-2 py-1 rounded-full {% if item.type == 'event' %}bg-blue-100 text-blue-800{% else %}bg-green-100 text-green-800{% endif %}">
+                                {{ item.type|upper }}
+                            </span>
+                            <h3 class="text-lg font-semibold text-gray-900 mt-2">{{ item.title }}</h3>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4 text-sm text-gray-500 mt-3">
+                        {% if item.type == 'event' %}
+                        <span class="flex items-center">
+                            <i class="fa-solid fa-clock mr-2"></i>
+                            {{ item.time|date:"g:i A" }}
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fa-solid fa-map-marker-alt mr-2"></i>
+                            {{ item.object.location|default:"No location" }}
+                        </span>
+                        <a href="{% url 'event_detail' item.object.pk %}" class="text-indigo-600 hover:text-indigo-800 font-medium">
+                            View Details <i class="fa-solid fa-arrow-right ml-1"></i>
+                        </a>
+                        {% else %}
+                        <span class="flex items-center">
+                            <i class="fa-solid fa-calendar mr-2"></i>
+                            Due: {{ item.time|date:"M d, Y" }}
+                        </span>
+                        <span class="flex items-center">
+                            {% if item.object.priority == 'HIGH' %}
+                            <span class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-medium">High Priority</span>
+                            {% elif item.object.priority == 'MEDIUM' %}
+                            <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-medium">Medium Priority</span>
+                            {% else %}
+                            <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">Low Priority</span>
+                            {% endif %}
+                        </span>
+                        <a href="{% url 'task_update' item.object.pk %}" class="text-indigo-600 hover:text-indigo-800 font-medium">
+                            View Task <i class="fa-solid fa-arrow-right ml-1"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                    
+                    {% if item.type == 'event' and item.object.description %}
+                    <p class="text-gray-600 mt-3 text-sm">{{ item.object.description|truncatewords:20 }}</p>
+                    {% elif item.type == 'task' and item.object.description %}
+                    <p class="text-gray-600 mt-3 text-sm">{{ item.object.description|truncatewords:20 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+        <i class="fa-solid fa-check-circle text-5xl text-gray-300 mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">All Clear!</h3>
+        <p class="text-gray-500">You have no events or tasks scheduled for today.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

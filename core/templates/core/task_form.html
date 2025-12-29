@@ -1,0 +1,180 @@
+{% extends 'theme/base.html' %}
+
+{% block title %}New Task - DecisionTracker{% endblock %}
+{% block page_title %}New Task{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6 mb-[50px]">
+    <!-- Header Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900 flex items-center">
+                    <i class="fa-solid fa-plus-circle mr-3 text-blue-600"></i>
+                    Create New Task
+                </h2>
+                <p class="text-sm text-gray-600 mt-2">Add a new task to track your work</p>
+            </div>
+            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                <i class="fa-solid fa-tasks text-blue-600 text-xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Form Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-gray-50 to-white px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                <i class="fa-solid fa-gear mr-2 text-gray-600"></i>
+                Task Details
+            </h3>
+        </div>
+        
+        <form method="post" class="p-6 space-y-6">
+            {% csrf_token %}
+
+            <!-- Title & Description -->
+            <div class="space-y-4">
+                <div class="space-y-2">
+                    <label for="{{ form.title.id_for_label }}" class="block text-sm font-semibold text-gray-700 flex items-center">
+                        <i class="fa-solid fa-heading mr-2 text-blue-500 text-sm"></i>
+                        {{ form.title.label }} <span class="text-red-500 ml-1">*</span>
+                    </label>
+                    <div class="relative">
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                        <div class="mt-1 text-sm text-red-600">{{ form.title.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="space-y-2">
+                    <label for="{{ form.description.id_for_label }}" class="block text-sm font-semibold text-gray-700 flex items-center">
+                        <i class="fa-solid fa-align-left mr-2 text-blue-500 text-sm"></i>
+                        {{ form.description.label }}
+                    </label>
+                    <div class="relative">
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <div class="mt-1 text-sm text-red-600">{{ form.description.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project & Responsible Persons -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {% if form.project %}
+                <div class="space-y-2">
+                    <label for="{{ form.project.id_for_label }}" class="block text-sm font-semibold text-gray-700 flex items-center">
+                        <i class="fa-solid fa-folder mr-2 text-blue-500 text-sm"></i>
+                        {{ form.project.label }}
+                    </label>
+                    <div class="relative">
+                        {{ form.project }}
+                        {% if form.project.errors %}
+                        <div class="mt-1 text-sm text-red-600">{{ form.project.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if form.responsible_persons %}
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-gray-700 flex items-center mb-2">
+                        <i class="fa-solid fa-users mr-2 text-blue-500 text-sm"></i>
+                        {{ form.responsible_persons.label }}
+                    </label>
+                    <div class="max-h-32 overflow-y-auto bg-white border border-gray-300 rounded-lg p-3 space-y-2">
+                        {% for checkbox in form.responsible_persons %}
+                            <label for="{{ checkbox.id_for_label }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-100 cursor-pointer">
+                                {{ checkbox.tag }}
+                                <span class="text-sm font-medium text-gray-700">{{ checkbox.choice_label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.responsible_persons.errors %}
+                    <div class="mt-1 text-sm text-red-600">{{ form.responsible_persons.errors }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Events -->
+            {% if form.events %}
+            <div class="space-y-2">
+                <label class="block text-sm font-semibold text-gray-700 flex items-center mb-2">
+                    <i class="fa-solid fa-calendar-check mr-2 text-blue-500 text-sm"></i>
+                    {{ form.events.label }}
+                </label>
+                <div class="max-h-32 overflow-y-auto bg-white border border-gray-300 rounded-lg p-3 space-y-2">
+                    {% for checkbox in form.events %}
+                        <label for="{{ checkbox.id_for_label }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-100 cursor-pointer">
+                            {{ checkbox.tag }}
+                            <span class="text-sm font-medium text-gray-700">{{ checkbox.choice_label }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+                {% if form.events.errors %}
+                <div class="mt-1 text-sm text-red-600">{{ form.events.errors }}</div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Due Date & Priority -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label for="{{ form.due_date.id_for_label }}" class="block text-sm font-semibold text-gray-700 flex items-center">
+                        <i class="fa-regular fa-calendar mr-2 text-blue-500 text-sm"></i>
+                        {{ form.due_date.label }}
+                    </label>
+                    <div class="relative">
+                        {{ form.due_date }}
+                        {% if form.due_date.errors %}
+                        <div class="mt-1 text-sm text-red-600">{{ form.due_date.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="space-y-2">
+                    <label for="{{ form.priority.id_for_label }}" class="block text-sm font-semibold text-gray-700 flex items-center">
+                        <i class="fa-solid fa-flag mr-2 text-blue-500 text-sm"></i>
+                        {{ form.priority.label }}
+                    </label>
+                    <div class="relative">
+                        {{ form.priority }}
+                        {% if form.priority.errors %}
+                        <div class="mt-1 text-sm text-red-600">{{ form.priority.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-between pt-6 border-t border-gray-200">
+                <a href="{% url 'my_tasks' %}" class="inline-flex items-center justify-center py-2.5 px-6 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md">
+                    <i class="fa-solid fa-arrow-left mr-2"></i>
+                    Cancel
+                </a>
+                <button type="submit" class="inline-flex items-center justify-center py-2.5 px-6 border border-transparent rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                    <i class="fa-solid fa-plus mr-2"></i>
+                    Create Task
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* Form styling using Tailwind classes */
+    input, textarea, select {
+        @apply w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white;
+    }
+    
+    textarea {
+        @apply pl-10 pt-3;
+        min-height: 100px;
+    }
+</style>
+{% endblock %}
+

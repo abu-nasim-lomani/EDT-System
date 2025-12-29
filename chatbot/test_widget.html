@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chatbot Widget Test</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <style>
+        body { padding: 50px; }
+        .test-info { background: #f0f0f0; padding: 20px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="test-info">
+        <h2>Chatbot Widget Test</h2>
+        <p>If you see a blue chat button in the bottom-right corner, the widget is working!</p>
+        <p>Check browser console (F12) for debug messages.</p>
+    </div>
+    
+    <div x-data="chatbotWidget()" 
+         x-init="console.log('Chatbot widget DOM initialized'); init()" 
+         class="fixed bottom-6 right-6 z-50" 
+         style="display: block !important; visibility: visible !important; z-index: 9999 !important;">
+        <!-- Chat Button -->
+        <button 
+            @click="toggleChat()" 
+            class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full w-14 h-14 shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
+            x-show="!isOpen"
+            style="display: flex !important;">
+            <i class="fa-solid fa-comments text-xl"></i>
+        </button>
+    </div>
+
+    <script>
+    function chatbotWidget() {
+        return {
+            isOpen: false,
+            messages: [],
+            inputMessage: '',
+            isLoading: false,
+            conversationId: null,
+            unreadCount: 0,
+
+            init() {
+                console.log('Chatbot widget initializing...');
+            },
+
+            toggleChat() {
+                this.isOpen = !this.isOpen;
+                console.log('Chat toggled, isOpen:', this.isOpen);
+            }
+        }
+    }
+    </script>
+</body>
+</html>
+

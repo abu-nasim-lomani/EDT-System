@@ -1,0 +1,90 @@
+{% extends 'theme/base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6 mb-[50px]">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">{{ title }}</h1>
+                <p class="text-sm text-gray-500 mt-1">{{ events.count }} event{{ events.count|pluralize }} found</p>
+            </div>
+            <a href="{% url 'event_list' %}" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">
+                View All Events <i class="fa-solid fa-arrow-right ml-1"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Events List -->
+    {% if events %}
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Event</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Date & Time</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Location</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Type</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Participants</th>
+                    <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for event in events %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4">
+                        <a href="{% url 'event_detail' event.pk %}" class="font-semibold text-gray-900 hover:text-indigo-600">
+                            {{ event.title }}
+                        </a>
+                        {% if event.description %}
+                        <p class="text-sm text-gray-500 mt-1">{{ event.description|truncatewords:10 }}</p>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">
+                        <div>{{ event.start_datetime|date:"M d, Y" }}</div>
+                        <div class="text-xs text-gray-500">{{ event.start_datetime|date:"g:i A" }}</div>
+                        {% if event.end_datetime %}
+                        <div class="text-xs text-gray-500">- {{ event.end_datetime|date:"g:i A" }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">{{ event.location|default:"N/A" }}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                            {{ event.get_type_display }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full 
+                            {% if event.status == 'UPCOMING' %}bg-blue-100 text-blue-800
+                            {% elif event.status == 'COMPLETED' %}bg-green-100 text-green-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ event.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">
+                        {{ event.participants.count }} participant{{ event.participants.count|pluralize }}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <a href="{% url 'event_detail' event.pk %}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                            View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+        <i class="fa-solid fa-calendar-xmark text-5xl text-gray-300 mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">No Events Found</h3>
+        <p class="text-gray-500">No events match the selected filter criteria.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,88 @@
+{% extends 'theme/base.html' %}
+
+{% block title %}
+    {% if project %}Edit Project{% else %}Create New Project{% endif %}
+{% endblock %}
+
+{% block page_title %}
+    {% if project %}Edit Project{% else %}Create New Project{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto mb-[50px]">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-800">Project Information</h2>
+        </div>
+        
+        <form method="post" class="p-6">
+            {% csrf_token %}
+            <div class="space-y-6">
+                <div>
+                    <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.title.label }}</label>
+                    {{ form.title }}
+                    {% if form.title.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.title.errors }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.description.label }}</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.description.errors }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.start_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.start_date.label }}</label>
+                        {{ form.start_date }}
+                        {% if form.start_date.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.start_date.errors }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.end_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.end_date.label }}</label>
+                        {{ form.end_date }}
+                        {% if form.end_date.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.end_date.errors }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    <label for="{{ form.project_manager.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.project_manager.label }}</label>
+                    {{ form.project_manager }}
+                    {% if form.project_manager.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.project_manager.errors }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.project_employees.label }}</label>
+                    <div class="max-h-48 overflow-y-auto bg-white border border-gray-300 rounded-lg p-3 space-y-2">
+                        {% for checkbox in form.project_employees %}
+                            <label for="{{ checkbox.id_for_label }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-100 cursor-pointer">
+                                {{ checkbox.tag }}
+                                <span class="text-sm font-medium text-gray-700">{{ checkbox.choice_label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.project_employees.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.project_employees.errors }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="pt-8 mt-6 border-t border-gray-200 flex justify-end gap-3">
+                <a href="{% url 'project_list' %}" class="py-2 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">Cancel</a>
+                <button type="submit" class="py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+                    {% if project %}Update Project{% else %}Create Project{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

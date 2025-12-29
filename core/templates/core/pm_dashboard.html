@@ -1,0 +1,294 @@
+{% extends 'theme/base.html' %}
+
+{% block title %}PM Dashboard{% endblock %}
+{% block page_title %}Project Management Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-8 mb-[50px]">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">My Projects Dashboard</h2>
+            <p class="text-sm text-gray-500 mt-1">Overview of your projects, events, and tasks</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="{% url 'todays_todo' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg text-sm font-medium flex items-center transition-colors shadow-sm">
+                <span class="mr-2">Today's ToDo</span>
+                <span class="bg-white/20 px-2 py-1 rounded text-xs font-bold">{{ todays_todo_count }}</span>
+            </a>
+            <a href="{% url 'event_overlap_report' %}" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg text-sm font-medium flex items-center transition-colors shadow-sm" style="background-color: #dc2626;">
+                <span class="mr-2">Overlap Events</span>
+                <span class="bg-white/20 px-2 py-1 rounded text-xs font-bold">{{ overlap_count }}</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Upcoming Tasks Widget -->
+    {% if upcoming_tasks %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Upcoming 3 Tasks</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            {% for task in upcoming_tasks %}
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <h4 class="font-semibold text-gray-900 mb-2">{{ task.title }}</h4>
+                {% if task.due_date %}
+                <p class="text-sm text-gray-600">
+                    <i class="fa-solid fa-calendar mr-1"></i>
+                    Due: {{ task.due_date|date:"M d, Y" }}
+                </p>
+                {% endif %}
+                {% if task.project %}
+                <p class="text-sm text-gray-600 mt-1">
+                    <i class="fa-solid fa-folder mr-1"></i>
+                    {{ task.project.name }}
+                </p>
+                {% endif %}
+                <a href="{% url 'task_update' task.pk %}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium mt-2 inline-block">
+                    View Details <i class="fa-solid fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="flex justify-center">
+            <a href="{% url 'task_list' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center transition-colors shadow-sm">
+                View All Tasks
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Upcoming Events Widget -->
+    {% if upcoming_events %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Upcoming 3 Events</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            {% for event in upcoming_events %}
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <h4 class="font-semibold text-gray-900 mb-2">{{ event.title }}</h4>
+                <p class="text-sm text-gray-600">
+                    <i class="fa-solid fa-clock mr-1"></i>
+                    {{ event.start_datetime|date:"M d, g:i A" }}
+                </p>
+                {% if event.location %}
+                <p class="text-sm text-gray-600 mt-1">
+                    <i class="fa-solid fa-map-marker-alt mr-1"></i>
+                    {{ event.location }}
+                </p>
+                {% endif %}
+                <a href="{% url 'event_detail' event.pk %}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium mt-2 inline-block">
+                    View Details <i class="fa-solid fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="flex justify-center">
+            <a href="{% url 'event_list' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center transition-colors shadow-sm">
+                <i class="fa-solid fa-calendar-star mr-2"></i> View All Events
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Events Panel -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Events Overview</h3>
+        
+        <!-- Project-wise Events -->
+        <div class="mb-6">
+            <h4 class="text-md font-medium text-gray-700 mb-3">Project-wise Events</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for stat in event_stats_by_project %}
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer" onclick="window.location='{% url 'project_detail' stat.project.pk %}'">
+                    <h5 class="font-semibold text-gray-900 mb-2">{{ stat.project.title }}</h5>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                            <span class="text-gray-600">Total:</span>
+                            <a href="{% url 'filtered_events_list' 'project' stat.project.pk %}" class="font-bold text-gray-900 ml-1 hover:text-indigo-600 hover:underline">{{ stat.total }}</a>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Upcoming:</span>
+                            <a href="{% url 'filtered_events_list' 'project' stat.project.pk %}" class="font-bold text-blue-600 ml-1 hover:text-indigo-600 hover:underline">{{ stat.upcoming }}</a>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Completed:</span>
+                            <a href="{% url 'filtered_events_list' 'project' stat.project.pk %}" class="font-bold text-green-600 ml-1 hover:text-indigo-600 hover:underline">{{ stat.completed }}</a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="col-span-full text-gray-500 text-center py-4">No project events</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasks Panel -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Tasks Overview</h3>
+        
+        <!-- Project-wise Tasks -->
+        <div class="mb-6">
+            <h4 class="text-md font-medium text-gray-700 mb-3">Project-wise Tasks</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for stat in task_stats_by_project %}
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer" onclick="window.location='{% url 'project_detail' stat.project.pk %}'">
+                    <h5 class="font-semibold text-gray-900 mb-2">{{ stat.project.title }}</h5>
+                    <div class="space-y-1 text-sm">
+                        <div class="flex justify-between"><span class="text-gray-600">Total:</span><a href="{% url 'filtered_tasks_list' 'project' stat.project.pk %}" class="font-bold text-gray-900 hover:text-indigo-600 hover:underline">{{ stat.total }}</a></div>
+                        <div class="flex justify-between"><span class="text-gray-600">Upcoming:</span><a href="{% url 'filtered_tasks_list_with_status' 'project' stat.project.pk 'UPCOMING' %}" class="font-bold hover:text-indigo-600 hover:underline" style="color: #6b21a8 !important;">{{ stat.upcoming }}</a></div>
+                        <div class="flex justify-between"><span class="text-gray-600">Ongoing:</span><a href="{% url 'filtered_tasks_list_with_status' 'project' stat.project.pk 'ONGOING' %}" class="font-bold text-blue-600 hover:text-indigo-600 hover:underline">{{ stat.ongoing }}</a></div>
+                        <div class="flex justify-between"><span class="text-gray-600">Pending:</span><a href="{% url 'filtered_tasks_list_with_status' 'project' stat.project.pk 'PENDING' %}" class="font-bold text-gray-600 hover:text-indigo-600 hover:underline">{{ stat.pending }}</a></div>
+                        <div class="flex justify-between"><span class="text-gray-600">Holding:</span><a href="{% url 'filtered_tasks_list_with_status' 'project' stat.project.pk 'HOLDING' %}" class="font-bold hover:text-indigo-600 hover:underline" style="color: #9a3412 !important;">{{ stat.holding }}</a></div>
+                        <div class="flex justify-between"><span class="text-gray-600">Completed:</span><a href="{% url 'filtered_tasks_list_with_status' 'project' stat.project.pk 'COMPLETED' %}" class="font-bold text-green-600 hover:text-indigo-600 hover:underline">{{ stat.completed }}</a></div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="col-span-full text-gray-500 text-center py-4">No project tasks</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- User-wise Tasks -->
+        <div>
+            <h4 class="text-md font-medium text-gray-700 mb-3">User-wise Tasks</h4>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">User</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Total</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Upcoming</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Ongoing</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Pending</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Holding</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Completed</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for stat in task_stats_by_user %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center mr-2">
+                                        <span class="font-bold text-xs text-indigo-600">{{ stat.user.username|first|upper }}</span>
+                                    </div>
+                                    <span class="font-medium text-gray-900">{{ stat.user.username }}</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <a href="{% url 'filtered_tasks_list' 'person' stat.user.pk %}" class="font-semibold text-gray-900 hover:text-indigo-600 hover:underline">{{ stat.total }}</a>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <a href="{% url 'filtered_tasks_list_with_status' 'person' stat.user.pk 'UPCOMING' %}" class="font-semibold hover:text-indigo-600 hover:underline" style="color: #6b21a8 !important;">{{ stat.upcoming }}</a>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <a href="{% url 'filtered_tasks_list_with_status' 'person' stat.user.pk 'ONGOING' %}" class="font-semibold text-blue-600 hover:text-indigo-600 hover:underline">{{ stat.ongoing }}</a>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <a href="{% url 'filtered_tasks_list_with_status' 'person' stat.user.pk 'PENDING' %}" class="font-semibold text-gray-600 hover:text-indigo-600 hover:underline">{{ stat.pending }}</a>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <a href="{% url 'filtered_tasks_list_with_status' 'person' stat.user.pk 'HOLDING' %}" class="font-semibold hover:text-indigo-600 hover:underline" style="color: #9a3412 !important;">{{ stat.holding }}</a>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <a href="{% url 'filtered_tasks_list_with_status' 'person' stat.user.pk 'COMPLETED' %}" class="font-semibold text-green-600 hover:text-indigo-600 hover:underline">{{ stat.completed }}</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">No task data</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Panel -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Performance Metrics</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="text-center p-4 border border-gray-200 rounded-lg">
+                <p class="text-sm text-gray-600 mb-2">In-Time Completion</p>
+                <p class="text-3xl font-bold text-green-600">{{ in_time_percentage|floatformat:1 }}%</p>
+            </div>
+            <div class="text-center p-4 border border-gray-200 rounded-lg">
+                <p class="text-sm text-gray-600 mb-2">Pending Tasks</p>
+                <p class="text-3xl font-bold" style="color: #9a3412 !important;">{{ pending_percentage|floatformat:1 }}%</p>
+            </div>
+            <div class="text-center p-4 border border-gray-200 rounded-lg">
+                <p class="text-sm text-gray-600 mb-2">Ongoing Tasks</p>
+                <p class="text-3xl font-bold text-blue-600">{{ ongoing_percentage|floatformat:1 }}%</p>
+            </div>
+        </div>
+        
+        <!-- Bar Chart -->
+        <div class="mt-6">
+            <h4 class="text-md font-medium text-gray-700 mb-4">Performance Overview</h4>
+            <div class="h-64">
+                <canvas id="pmPerformanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('pmPerformanceChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['In-Time Completion', 'Pending Tasks', 'Ongoing Tasks'],
+                datasets: [{
+                    label: 'Percentage (%)',
+                    data: [
+                        {{ in_time_percentage|floatformat:1 }},
+                        {{ pending_percentage|floatformat:1 }},
+                        {{ ongoing_percentage|floatformat:1 }}
+                    ],
+                    backgroundColor: [
+                        'rgba(34, 197, 94, 0.8)',  // green
+                        'rgba(154, 52, 18, 0.8)',   // orange/brown
+                        'rgba(37, 99, 235, 0.8)'   // blue
+                    ],
+                    borderColor: [
+                        'rgba(34, 197, 94, 1)',
+                        'rgba(154, 52, 18, 1)',
+                        'rgba(37, 99, 235, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y.toFixed(1) + '%';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+

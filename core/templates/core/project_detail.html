@@ -1,0 +1,236 @@
+{% extends 'theme/base.html' %}
+
+{% block title %}{{ project.title }} - Project Details{% endblock %}
+{% block page_title %}{{ project.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6 mb-[50px]">
+    <!-- Project Header -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex-1">
+                <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ project.title }}</h1>
+                {% if project.description %}
+                <p class="text-gray-600 mb-4">{{ project.description }}</p>
+                {% endif %}
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                        <span class="text-gray-500">Project Manager:</span>
+                        <p class="font-medium text-gray-900">{{ project.project_manager.username|default:"Unassigned" }}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Start Date:</span>
+                        <p class="font-medium text-gray-900">{{ project.start_date|date:"M d, Y" }}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">End Date:</span>
+                        <p class="font-medium text-gray-900">{{ project.end_date|date:"M d, Y" }}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Team Members:</span>
+                        <p class="font-medium text-gray-900">{{ project.project_employees.count }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                {% if request.user.is_superuser or request.user.role == 'MANAGEMENT' or project.project_manager == request.user %}
+                <a href="{% url 'project_update' project.pk %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    <i class="fa-solid fa-pen-to-square mr-2"></i>Edit
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Tasks List -->
+        <div class="lg:col-span-2 space-y-4">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Project Tasks ({{ project.tasks.count }})</h2>
+                </div>
+                <div class="divide-y divide-gray-200">
+                    {% for task in project.tasks.all %}
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-3">
+                            <h3 class="text-lg font-medium text-gray-900">{{ task.title }}</h3>
+                            <div class="flex items-center space-x-2">
+                                {% if task.priority == 'HIGH' %}
+                                <span class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-medium">High</span>
+                                {% elif task.priority == 'MEDIUM' %}
+                                <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-medium">Medium</span>
+                                {% else %}
+                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">Low</span>
+                                {% endif %}
+                                
+                                {% if task.status == 'COMPLETED' %}
+                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">Completed</span>
+                                {% elif task.status == 'ONGOING' %}
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">Ongoing</span>
+                                {% elif task.status == 'PENDING' %}
+                                <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-medium">Pending</span>
+                                {% elif task.status == 'HOLDING' %}
+                                <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-medium">Holding</span>
+                                {% else %}
+                                <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-medium">Upcoming</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if task.description %}
+                        <p class="text-gray-600 mb-4">{{ task.description }}</p>
+                        {% endif %}
+                        <div class="flex items-center space-x-4 text-sm text-gray-500">
+                            <span class="flex items-center">
+                                <i class="fa-solid fa-users mr-1"></i>
+                                {% for person in task.responsible_persons.all %}{{ person.username }}{% if not forloop.last %}, {% endif %}{% empty %}Unassigned{% endfor %}
+                            </span>
+                            {% if task.due_date %}
+                            <span class="flex items-center">
+                                <i class="fa-regular fa-calendar mr-1"></i>
+                                Due: {{ task.due_date|date:"M d, Y" }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8">
+                        <i class="fa-solid fa-clipboard-list text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-500">No tasks for this project yet.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Events List -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Project Events ({{ events_count }})</h2>
+                </div>
+                <div class="divide-y divide-gray-200">
+                    {% for event in project_events %}
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-3">
+                            <h3 class="text-lg font-medium text-gray-900">
+                                <a href="{% url 'event_detail' event.pk %}" class="hover:text-indigo-600">{{ event.title }}</a>
+                            </h3>
+                            <div class="flex items-center space-x-2">
+                                {% if event.type == 'MEETING' %}
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">Meeting</span>
+                                {% elif event.type == 'WORKSHOP' %}
+                                <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-medium">Workshop</span>
+                                {% elif event.type == 'TRAINING' %}
+                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">Training</span>
+                                {% elif event.type == 'SEMINAR' %}
+                                <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-medium">Seminar</span>
+                                {% else %}
+                                <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-medium">Other</span>
+                                {% endif %}
+                                
+                                {% if event.status == 'UPCOMING' %}
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">Upcoming</span>
+                                {% elif event.status == 'COMPLETED' %}
+                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">Completed</span>
+                                {% else %}
+                                <span class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-medium">Cancelled</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if event.description %}
+                        <p class="text-gray-600 mb-4">{{ event.description }}</p>
+                        {% endif %}
+                        <div class="flex items-center space-x-4 text-sm text-gray-500">
+                            <span class="flex items-center">
+                                <i class="fa-solid fa-calendar-check mr-1"></i>
+                                {{ event.start_datetime|date:"M d, Y" }} at {{ event.start_datetime|date:"g:i A" }}
+                            </span>
+                            {% if event.end_datetime %}
+                            <span class="flex items-center">
+                                <i class="fa-solid fa-clock mr-1"></i>
+                                Until {{ event.end_datetime|date:"g:i A" }}
+                            </span>
+                            {% endif %}
+                            {% if event.location %}
+                            <span class="flex items-center">
+                                <i class="fa-solid fa-location-dot mr-1"></i>
+                                {{ event.location }}
+                            </span>
+                            {% endif %}
+                            {% if event.participants.all %}
+                            <span class="flex items-center">
+                                <i class="fa-solid fa-users mr-1"></i>
+                                {{ event.participants.count }} participant{{ event.participants.count|pluralize }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8">
+                        <i class="fa-solid fa-calendar-xmark text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-500">No events for this project yet.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="lg:col-span-1 space-y-4">
+            <!-- Team Members -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Team Members</h2>
+                </div>
+                <div class="p-6">
+                    {% for member in project.project_employees.all %}
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                            <span class="font-bold text-indigo-600">{{ member.username|first|upper }}</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900">{{ member.get_full_name|default:member.username }}</p>
+                            <p class="text-sm text-gray-500">{{ member.email }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-gray-500 text-sm">No team members assigned yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Quick Stats</h2>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Total Tasks:</span>
+                        <span class="font-bold text-gray-900">{{ project.tasks.count }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Completed:</span>
+                        <span class="font-bold text-green-600">{{ completed_count }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">In Progress:</span>
+                        <span class="font-bold text-blue-600">{{ ongoing_count }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Total Events:</span>
+                        <span class="font-bold text-gray-900">{{ events_count }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Upcoming Events:</span>
+                        <span class="font-bold text-purple-600">{{ upcoming_events_count }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Completed Events:</span>
+                        <span class="font-bold text-green-600">{{ completed_events_count }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,100 @@
+{% extends 'theme/base.html' %}
+
+{% block title %}All Tasks{% endblock %}
+{% block page_title %}All Tasks{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6 mb-[50px]">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">All Tasks</h1>
+                <p class="text-sm text-gray-500 mt-1">{{ tasks.count }} task{{ tasks.count|pluralize }} found</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasks List -->
+    {% if tasks %}
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Task</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Due Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Priority</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Project</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Assigned To</th>
+                    <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for task in tasks %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4">
+                        <a href="{% url 'task_update' task.pk %}" class="font-semibold text-gray-900 hover:text-indigo-600">
+                            {{ task.title }}
+                        </a>
+                        {% if task.description %}
+                        <p class="text-sm text-gray-500 mt-1">{{ task.description|truncatewords:10 }}</p>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">
+                        {% if task.due_date %}
+                            {{ task.due_date|date:"M d, Y" }}
+                        {% else %}
+                            <span class="text-gray-400">No due date</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full 
+                            {% if task.priority == 'HIGH' %}bg-red-100 text-red-800
+                            {% elif task.priority == 'MEDIUM' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-green-100 text-green-800{% endif %}">
+                            {{ task.get_priority_display }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">
+                        {{ task.get_status_display }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">
+                        {% if task.project %}
+                            <a href="{% url 'project_detail' task.project.pk %}" class="text-indigo-600 hover:text-indigo-800">
+                                {{ task.project.name }}
+                            </a>
+                        {% else %}
+                            <span class="text-gray-400">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">
+                        {% for person in task.responsible_persons.all|slice:":3" %}
+                            <span class="inline-block mr-1">{{ person.username }}</span>
+                            {% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                        {% if task.responsible_persons.count > 3 %}
+                            <span class="text-gray-400">+{{ task.responsible_persons.count|add:"-3" }} more</span>
+                        {% elif task.responsible_persons.count == 0 %}
+                            <span class="text-gray-400">Unassigned</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <a href="{% url 'task_update' task.pk %}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                            View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+        <i class="fa-solid fa-tasks text-gray-300 text-4xl mb-4"></i>
+        <p class="text-gray-600">No tasks found.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
