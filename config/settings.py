@@ -35,7 +35,7 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True').lower() not in ('false', '0', 'no')
 
-ALLOWED_HOSTS = ['*'] # In production, set this to actual domains like ['your-app.onrender.com']
+ALLOWED_HOSTS = ['*'] # Required for PythonAnywhere free tier
 
 
 # Application definition
