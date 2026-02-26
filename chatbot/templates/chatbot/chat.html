@@ -1,0 +1,617 @@
+{% extends "theme/base.html" %}
+{% load static %}
+
+{% block title %}AI Assistant – EDT{% endblock %}
+
+{% block page_title %}
+<div class="flex items-center gap-3">
+    <div class="relative">
+        <div
+            class="w-9 h-9 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+            <i class="fa-solid fa-robot text-white text-sm"></i>
+        </div>
+        <span
+            class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-white"></span>
+    </div>
+    <div>
+        <span class="font-bold text-slate-800">AI Assistant</span>
+        <span class="hidden sm:inline text-xs text-slate-400 ml-2 font-normal">· Whisper + GPT-4o-mini + TTS</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<audio id="tts-audio" class="hidden"></audio>
+
+<style>
+    .chat-scroll::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .chat-scroll::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .chat-scroll::-webkit-scrollbar-thumb {
+        background: #e2e8f0;
+        border-radius: 99px;
+    }
+
+    @keyframes typingBounce {
+
+        0%,
+        80%,
+        100% {
+            transform: translateY(0);
+            opacity: .4;
+        }
+
+        40% {
+            transform: translateY(-6px);
+            opacity: 1;
+        }
+    }
+
+    .typing-dot {
+        animation: typingBounce 1.2s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(2) {
+        animation-delay: .15s;
+    }
+
+    .typing-dot:nth-child(3) {
+        animation-delay: .30s;
+    }
+
+    @keyframes pulse-ring {
+        0% {
+            transform: scale(.9);
+            opacity: .8;
+        }
+
+        70% {
+            transform: scale(1.4);
+            opacity: 0;
+        }
+
+        100% {
+            transform: scale(.9);
+            opacity: 0;
+        }
+    }
+
+    .record-ring {
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
+        background: rgba(239, 68, 68, .35);
+        animation: pulse-ring 1.2s ease-out infinite;
+    }
+
+    .bubble-user {
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    }
+
+    .pill:hover {
+        transform: translateY(-1px);
+    }
+
+    .conv-active {
+        background: linear-gradient(135deg, #ede9fe, #e0e7ff);
+    }
+
+    .voice-btn-active {
+        background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    }
+
+    .speak-badge {
+        animation: pulse 1s infinite;
+    }
+</style>
+
+<div x-data="chatApp()" x-init="init()" class="flex gap-4" style="height: calc(100vh - 140px);">
+
+    <!-- SIDEBAR -->
+    <div class="hidden lg:flex flex-col rounded-2xl overflow-hidden flex-shrink-0"
+        style="width: 30%; background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+        <div class="p-4 border-b border-slate-100">
+            <button @click="newConversation()"
+                class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 hover:shadow-md hover:shadow-indigo-200 hover:-translate-y-px"
+                style="background:linear-gradient(135deg,#6366f1 0%,#4f46e5 100%);">
+                <i class="fa-solid fa-plus"></i> New Chat
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-3 space-y-1 chat-scroll">
+            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2 mb-3">Recent Chats</p>
+            <template x-for="conv in conversations" :key="conv.id">
+                <button @click="loadConversationById(conv.id)"
+                    class="w-full text-left px-3 py-2.5 rounded-xl text-[12px] transition-all duration-150 group"
+                    :class="activeConvId===conv.id?'conv-active text-indigo-700 font-medium':'text-slate-600 hover:bg-slate-50'">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-message text-[10px] flex-shrink-0"
+                            :class="activeConvId===conv.id?'text-indigo-500':'text-slate-300'"></i>
+                        <span class="truncate" x-text="conv.title||'Chat '+conv.id"></span>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-0.5 ml-5" x-text="conv.message_count+' messages'"></p>
+                </button>
+            </template>
+            <div x-show="conversations.length===0" class="flex flex-col items-center py-10 text-slate-300">
+                <i class="fa-solid fa-comments text-2xl mb-2"></i>
+                <p class="text-[11px]">No chats yet</p>
+            </div>
+        </div>
+        <div class="p-3 border-t border-slate-100 bg-slate-50/70">
+            <p class="text-[10px] text-slate-400 text-center">
+                <i class="fa-solid fa-lock mr-1"></i>Your data stays private
+            </p>
+        </div>
+    </div>
+
+    <!-- MAIN PANEL -->
+    <div class="flex-1 flex flex-col rounded-2xl overflow-hidden min-w-0"
+        style="background:#fff;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.06);">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0"
+            style="background:linear-gradient(135deg,#faf5ff,#eff6ff);">
+            <!-- Left side: Avatar and Status -->
+            <div class="flex items-center gap-3 min-w-0 flex-1 mr-4">
+                <div class="relative flex-shrink-0">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm shadow-indigo-100/50"
+                        style="background:linear-gradient(135deg,#7c3aed,#4f46e5);">
+                        <i class="fa-solid fa-robot text-white"></i>
+                    </div>
+                    <span x-show="!isSpeaking"
+                        class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-white"></span>
+                    <span x-show="isSpeaking"
+                        class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-violet-400 rounded-full border-2 border-white animate-pulse"></span>
+                </div>
+                <div class="min-w-0">
+                    <p class="font-bold text-slate-800 text-sm truncate w-full tracking-tight">Project Assistant</p>
+                    <div class="text-[11px] flex items-center gap-1.5 mt-0.5">
+                        <span x-show="!isRecording && !isSpeaking"
+                            class="text-emerald-600 flex items-center gap-1 text-xs">
+                            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full inline-block"></span>
+                            Online <span class="text-slate-400 font-normal">· GPT-4o-mini + Whisper</span>
+                        </span>
+                        <span x-show="isRecording" class="text-red-500 font-medium flex items-center gap-1 text-xs">
+                            <span class="w-1.5 h-1.5 bg-red-500 rounded-full inline-block animate-pulse"></span>
+                            Recording…
+                        </span>
+                        <span x-show="isSpeaking" class="text-violet-600 font-medium flex items-center gap-1 text-xs">
+                            <span class="w-1.5 h-1.5 bg-violet-500 rounded-full inline-block animate-pulse"></span>
+                            Speaking…
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <!-- Right side: Controls -->
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <!-- Voice selector -->
+                <select x-model="selectedVoice"
+                    class="text-xs border border-indigo-100 rounded-lg pl-2 pr-6 py-1.5 text-slate-600 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 cursor-pointer transition-colors"
+                    title="AI voice style">
+                    <option value="shimmer">🎙 Shimmer</option>
+                    <option value="nova">🎙 Nova</option>
+                    <option value="alloy">🎙 Alloy</option>
+                    <option value="onyx">🎙 Onyx</option>
+                </select>
+                <!-- Auto-speak toggle -->
+                <button @click="autoSpeak=!autoSpeak"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 shadow-sm"
+                    :class="autoSpeak ? 'bg-violet-100 text-violet-700 border border-violet-200 hover:bg-violet-200' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 hover:text-slate-700'"
+                    :title="autoSpeak ? 'Auto-speak ON' : 'Auto-speak OFF'">
+                    <i class="fa-solid" :class="autoSpeak ? 'fa-volume-high' : 'fa-volume-xmark'"></i>
+                    <span x-text="autoSpeak ? 'Speaking' : 'Muted'"></span>
+                </button>
+                <div class="w-px h-5 bg-slate-200 mx-1"></div>
+                <button @click="clearMessages()" title="Clear display"
+                    class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+                    <i class="fa-solid fa-broom text-sm"></i>
+                </button>
+                <button @click="newConversation()" title="New chat"
+                    class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+                    <i class="fa-solid fa-plus text-sm"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick pills -->
+        <div x-show="messages.length===0"
+            class="px-5 pt-4 pb-2 flex flex-wrap gap-2 flex-shrink-0 border-b border-slate-50">
+            <p class="w-full text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Quick questions</p>
+            <template x-for="q in suggestions" :key="q">
+                <button @click="sendQuick(q)"
+                    class="pill text-xs bg-slate-50 border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 px-3 py-1.5 rounded-full transition-all duration-200">
+                    <span x-text="q"></span>
+                </button>
+            </template>
+        </div>
+
+        <!-- Messages -->
+        <div id="chat-messages" class="flex-1 overflow-y-auto px-5 py-5 space-y-5 chat-scroll">
+
+            <!-- Empty state -->
+            <div x-show="messages.length===0" class="flex flex-col items-center justify-center h-full text-center px-4">
+                <div class="w-20 h-20 rounded-2xl flex items-center justify-center mb-5 shadow-lg shadow-indigo-100"
+                    style="background:linear-gradient(135deg,#7c3aed,#4f46e5);">
+                    <i class="fa-solid fa-robot text-white text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800 mb-2">
+                    Hi, {{ request.user.first_name|default:request.user.username }}! 👋
+                </h3>
+                <p class="text-slate-500 text-sm max-w-sm leading-relaxed">
+                    I'm your <span class="font-semibold text-indigo-600">AI Project Assistant</span>.
+                    Type or <span class="font-semibold text-red-500">hold 🎤 to speak</span> in Bangla or English!
+                </p>
+                <div class="mt-6 flex flex-wrap justify-center gap-3 text-xs text-slate-400">
+                    <span
+                        class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-full">
+                        <i class="fa-solid fa-list-check text-indigo-400"></i> Tasks & Projects
+                    </span>
+                    <span
+                        class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-full">
+                        <i class="fa-solid fa-calendar-check text-violet-400"></i> Events & Meetings
+                    </span>
+                    <span
+                        class="flex items-center gap-1.5 bg-red-50 border border-red-200 px-3 py-1.5 rounded-full text-red-600">
+                        <i class="fa-solid fa-microphone text-red-400"></i> Hold mic to speak
+                    </span>
+                    <span
+                        class="flex items-center gap-1.5 bg-violet-50 border border-violet-200 px-3 py-1.5 rounded-full text-violet-600">
+                        <i class="fa-solid fa-volume-high text-violet-400"></i> Toggle auto-speak
+                    </span>
+                </div>
+            </div>
+
+            <!-- Message bubbles -->
+            <template x-for="(msg, idx) in messages" :key="idx">
+                <div class="flex flex-col w-full mb-1" :class="msg.role==='user'?'items-end':'items-start'">
+
+                    <div class="flex flex-col max-w-[85%] xl:max-w-[75%] group">
+                        <div class="flex items-end gap-2.5" :class="msg.role==='user'?'flex-row-reverse':''">
+                            <!-- Bubble Text, subtle backgrounds to differentiate User vs AI -->
+                            <div class="px-3 py-2 leading-relaxed rounded-2xl" style="font-size: 12px; max-width: 100%;"
+                                :class="msg.role==='user'?'bg-slate-100 text-slate-800 rounded-br-sm':'text-slate-800'">
+                                <p class="whitespace-pre-wrap" x-text="msg.content"></p>
+                            </div>
+                        </div>
+
+                        <!-- Meta (Time & Actions) -->
+                        <div class="flex items-center gap-1 mt-1 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                            :class="msg.role==='user'?'justify-end pr-2':'justify-start pl-2'">
+                            <p class="text-slate-400 font-medium" style="font-size: 5px;"
+                                x-text="formatTime(msg.timestamp)"></p>
+                            <button x-show="msg.role==='assistant'" @click="speakText(msg.content)"
+                                class="text-slate-300 hover:text-violet-500 transition-colors" style="font-size: 5px;"
+                                title="Play this message">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </template>
+
+            <!-- Typing indicator -->
+            <div x-show="isLoading" class="flex flex-col w-full items-start mb-2">
+                <div class="flex items-end gap-2.5 max-w-[85%] xl:max-w-[75%]">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white shadow-sm shadow-indigo-200/50"
+                        style="background:linear-gradient(135deg,#7c3aed,#4f46e5);">
+                        <i class="fa-solid fa-robot text-[11px]"></i>
+                    </div>
+                    <div class="bg-white border border-slate-100 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
+                        <div class="flex items-center gap-1.5 h-[20px]">
+                            <div class="typing-dot w-1.5 h-1.5 bg-indigo-400 rounded-full"></div>
+                            <div class="typing-dot w-1.5 h-1.5 bg-indigo-400 rounded-full"></div>
+                            <div class="typing-dot w-1.5 h-1.5 bg-indigo-400 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="border-t border-slate-100 px-4 py-3.5 flex-shrink-0 bg-slate-50/60">
+            <form @submit.prevent="sendMessage()" class="flex items-end gap-3">
+                <div class="flex-1 relative">
+                    <textarea x-model="inputMessage" @keydown.enter.prevent="if(!$event.shiftKey) sendMessage()"
+                        rows="1" placeholder="Type here… or hold 🎤 to speak in Bangla/English"
+                        class="w-full resize-none border border-slate-200 rounded-2xl px-4 py-3 pr-14 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent placeholder-slate-400 transition-all shadow-sm"
+                        :disabled="isLoading || isRecording" x-ref="input" style="max-height:120px;"
+                        @input="autoResize($event.target)">
+                    </textarea>
+                    <!-- Transcribing indicator inside input -->
+                    <div x-show="isTranscribing"
+                        class="absolute inset-0 bg-white/90 rounded-2xl flex items-center justify-center gap-2 text-sm text-violet-600">
+                        <i class="fa-solid fa-waveform-lines animate-pulse"></i>
+                        <span>Transcribing…</span>
+                    </div>
+                </div>
+
+                <!-- 🎤 Hold-to-Record button -->
+                <div class="relative flex-shrink-0">
+                    <div x-show="isRecording" class="record-ring"></div>
+                    <button type="button" @mousedown.prevent="startRecording()" @mouseup.prevent="stopRecording()"
+                        @touchstart.prevent="startRecording()" @touchend.prevent="stopRecording()"
+                        class="relative w-11 h-11 rounded-2xl text-white flex items-center justify-center transition-all duration-200 hover:shadow-md select-none"
+                        :class="isRecording
+                            ? 'voice-btn-active shadow-lg shadow-red-200 scale-110'
+                            : 'hover:shadow-indigo-200'"
+                        :style="isRecording ? '' : 'background:linear-gradient(135deg,#6366f1,#4f46e5)'"
+                        :title="isRecording ? 'Release to send' : 'Hold to speak (Bangla or English)'"
+                        :disabled="isLoading || isTranscribing">
+                        <i class="fa-solid text-sm" :class="isRecording ? 'fa-stop' : 'fa-microphone'"></i>
+                    </button>
+                </div>
+
+                <!-- Send button -->
+                <button type="submit" :disabled="isLoading || !inputMessage.trim() || isRecording"
+                    class="w-11 h-11 rounded-2xl text-white flex items-center justify-center transition-all duration-200 flex-shrink-0 hover:shadow-md hover:shadow-indigo-200 hover:-translate-y-px disabled:opacity-40 disabled:cursor-not-allowed"
+                    style="background:linear-gradient(135deg,#6366f1,#4f46e5);">
+                    <i class="fa-solid fa-paper-plane text-sm"></i>
+                </button>
+            </form>
+
+            <p class="text-center text-slate-400 mt-2" style="font-size: 6px; line-height: 8px;">
+                <kbd class="px-1 bg-white border border-slate-200 rounded"
+                    style="font-size: 5px; padding-top: 1px; padding-bottom: 1px;">Shift+Enter</kbd> new line
+                &nbsp;·&nbsp;
+                <i class="fa-solid fa-microphone text-red-400" style="font-size: 6px;"></i> <span
+                    class="text-red-400">Hold mic</span> to speak
+                &nbsp;·&nbsp;
+                <i class="fa-solid fa-volume-high text-violet-400" style="font-size: 6px;"></i> <span
+                    class="text-violet-500 font-medium">Auto-speak</span>
+                <span x-text="autoSpeak ? ' ON' : ' OFF'"
+                    :class="autoSpeak ? 'text-violet-600 font-semibold' : 'text-slate-400'"></span>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function chatApp() {
+        return {
+            messages: [],
+            inputMessage: '',
+            isLoading: false,
+            activeConvId: null,
+            conversations: [],
+            isRecording: false,
+            isTranscribing: false,
+            isSpeaking: false,
+            autoSpeak: true,
+            voiceTriggered: false,   // true when last message came from mic
+            selectedVoice: 'shimmer',
+            mediaRecorder: null,
+            audioChunks: [],
+            suggestions: [
+                'What are my pending tasks?',
+                'Show upcoming meetings',
+                'What events are this week?',
+                'Summarize my workload',
+                'Create a task for me',
+            ],
+
+            async init() {
+                await this.loadConversations();
+                await this.loadActiveConversation();
+                this.$nextTick(() => this.$refs.input?.focus());
+            },
+
+            // ── Conversation management ──────────────────────────────────
+            async loadConversations() {
+                try {
+                    const res = await fetch('/chatbot/conversations/', { headers: { 'X-CSRFToken': this.csrf() } });
+                    if (res.ok) this.conversations = (await res.json()).conversations || [];
+                } catch (e) { console.error(e); }
+            },
+
+            async loadActiveConversation() {
+                if (this.conversations.length > 0) {
+                    await this.loadConversationById(this.conversations[0].id);
+                } else {
+                    this.activeConvId = null;
+                    this.messages = [];
+                }
+            },
+
+            async loadConversationById(id) {
+                this.activeConvId = id;
+                this.messages = [];
+                try {
+                    const res = await fetch(`/chatbot/message/?conversation_id=${id}`, { headers: { 'X-CSRFToken': this.csrf() } });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.conversation_id === id) this.messages = data.messages || [];
+                        this.scrollBottom();
+                    }
+                } catch (e) { console.error(e); }
+            },
+
+            // ── Send text message ────────────────────────────────────────
+            async sendMessage() {
+                const text = this.inputMessage.trim();
+                if (!text || this.isLoading) return;
+                this.inputMessage = '';
+                if (this.$refs.input) this.$refs.input.style.height = 'auto';
+                await this._doSend(text);
+            },
+
+            sendQuick(q) { this.inputMessage = q; this.sendMessage(); },
+
+            async _doSend(text, fromVoice = false) {
+                this.messages.push({ role: 'user', content: text, timestamp: new Date().toISOString() });
+                this.isLoading = true;
+                this.scrollBottom();
+
+                try {
+                    const res = await fetch('/chatbot/message/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': this.csrf() },
+                        body: JSON.stringify({
+                            message: text,
+                            conversation_id: this.activeConvId,
+                            voice_mode: fromVoice,   // tells backend to use conversational tone
+                        })
+                    });
+                    const data = await res.json();
+
+                    if (data.error) {
+                        this.messages.push({ role: 'assistant', content: '⚠️ ' + data.error, timestamp: new Date().toISOString() });
+                    } else {
+                        this.activeConvId = data.conversation_id;
+                        const reply = data.response;
+                        this.messages.push({ role: 'assistant', content: reply, timestamp: data.timestamp });
+
+                        // Auto-speak the AI reply
+                        if (this.autoSpeak) this.speakText(reply);
+
+                        if (data.navigate && data.url) {
+                            setTimeout(() => window.location.href = data.url, 800);
+                        }
+                    }
+                    this.loadConversations();
+                } catch (e) {
+                    this.messages.push({ role: 'assistant', content: '⚠️ Connection error. Please try again.', timestamp: new Date().toISOString() });
+                } finally {
+                    this.isLoading = false;
+                    this.$nextTick(() => this.scrollBottom());
+                }
+            },
+
+            // ── 🎤 Voice recording (hold-to-record) ─────────────────────
+            async startRecording() {
+                if (this.isLoading || this.isTranscribing) return;
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    this.audioChunks = [];
+                    this.mediaRecorder = new MediaRecorder(stream, { mimeType: this._bestMime() });
+                    this.mediaRecorder.ondataavailable = e => { if (e.data.size > 0) this.audioChunks.push(e.data); };
+                    this.mediaRecorder.start();
+                    this.isRecording = true;
+                } catch (err) {
+                    alert('Microphone access denied. Please allow microphone permission.');
+                    console.error(err);
+                }
+            },
+
+            async stopRecording() {
+                if (!this.isRecording || !this.mediaRecorder) return;
+                this.isRecording = false;
+                this.mediaRecorder.stop();
+
+                this.mediaRecorder.onstop = async () => {
+                    // Stop all mic tracks
+                    this.mediaRecorder.stream.getTracks().forEach(t => t.stop());
+
+                    const mime = this.mediaRecorder.mimeType || 'audio/webm';
+                    const ext = mime.includes('ogg') ? 'ogg' : mime.includes('mp4') ? 'mp4' : 'webm';
+                    const blob = new Blob(this.audioChunks, { type: mime });
+
+                    if (blob.size < 1000) return; // Too short, ignore
+
+                    // Send to Whisper STT
+                    this.isTranscribing = true;
+                    try {
+                        const form = new FormData();
+                        form.append('audio', blob, `voice.${ext}`);
+                        form.append('csrfmiddlewaretoken', this.csrf());
+
+                        const res = await fetch('/chatbot/stt/', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': this.csrf() },
+                            body: form
+                        });
+                        const data = await res.json();
+
+                        if (data.transcript && data.transcript.trim()) {
+                            this.isTranscribing = false;
+                            await this._doSend(data.transcript.trim(), true); // fromVoice=true
+                        } else if (data.error) {
+                            this.isTranscribing = false;
+                            console.error('STT error:', data.error);
+                        }
+                    } catch (e) {
+                        console.error('STT fetch error:', e);
+                    } finally {
+                        this.isTranscribing = false;
+                    }
+                };
+            },
+
+            _bestMime() {
+                const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'];
+                return types.find(t => MediaRecorder.isTypeSupported(t)) || '';
+            },
+
+            // ── 🔊 Text-to-Speech ────────────────────────────────────────
+            async speakText(text) {
+                if (!text || this.isSpeaking) return;
+                // Frontend markdown clean (matches backend)
+                let clean = text
+                    .replace(/[*_`#>~|]/g, '')
+                    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+                    .replace(/\n{2,}/g, '. ')
+                    .replace(/\n/g, ' ')
+                    .replace(/ {2,}/g, ' ')
+                    .trim()
+                    .substring(0, 2000);
+
+                this.isSpeaking = true;
+                try {
+                    const res = await fetch('/chatbot/tts/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': this.csrf() },
+                        body: JSON.stringify({ text: clean, voice: this.selectedVoice })
+                    });
+                    if (!res.ok) throw new Error('TTS failed');
+
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const audio = document.getElementById('tts-audio');
+                    audio.src = url;
+                    audio.onended = () => { this.isSpeaking = false; URL.revokeObjectURL(url); };
+                    audio.onerror = () => { this.isSpeaking = false; };
+                    audio.play();
+                } catch (e) {
+                    console.error('TTS error:', e);
+                    this.isSpeaking = false;
+                }
+            },
+
+            // ── UI helpers ───────────────────────────────────────────────
+            async newConversation() {
+                this.activeConvId = null;
+                this.messages = [];
+                this.$nextTick(() => this.$refs.input?.focus());
+            },
+            clearMessages() { this.messages = []; },
+
+            scrollBottom() {
+                setTimeout(() => {
+                    const el = document.getElementById('chat-messages');
+                    if (el) el.scrollTop = el.scrollHeight;
+                }, 50);
+            },
+
+            autoResize(el) {
+                el.style.height = 'auto';
+                el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+            },
+
+            formatTime(ts) {
+                if (!ts) return '';
+                return new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            },
+
+            csrf() {
+                const m = document.cookie.match(/csrftoken=([^;]+)/);
+                return m ? m[1] : '';
+            }
+        }
+    }
+</script>
+{% endblock %}

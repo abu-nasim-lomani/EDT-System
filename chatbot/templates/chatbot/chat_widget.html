@@ -1,38 +1,35 @@
 {% load static %}
 {% if request.user.is_authenticated %}
-{% if request.user.is_superuser or request.user.role == 'MANAGEMENT' and request.user.department == 'Senior Management' or request.user.role == 'MANAGER' and request.user.department == 'Project Management' %}
+{% if request.user.is_superuser or request.user.role == 'MANAGEMENT' or request.user.role == 'MANAGER' %}
 <!-- Chatbot Widget - Visible for PM and SM users -->
 <!-- DEBUG: User={{ request.user.username }}, Role={{ request.user.role }}, Dept={{ request.user.department }} -->
-<div x-data="chatbotWidget()" 
-     x-init="console.log('Chatbot widget DOM initialized'); init()" 
-     class="fixed bottom-6 right-6 z-50" 
-     style="display: block !important; visibility: visible !important; z-index: 9999 !important;">
+<div x-data="chatbotWidget()" x-init="console.log('Chatbot widget DOM initialized'); init()"
+    class="fixed bottom-6 right-6 z-50"
+    style="display: block !important; visibility: visible !important; z-index: 9999 !important;">
     <!-- Chat Button -->
-    <button 
-        @click="toggleChat()" 
+    <button @click="toggleChat()"
         class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full w-14 h-14 shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110"
         x-show="!isOpen"
         style="display: flex !important; position: fixed !important; bottom: 24px !important; right: 24px !important; z-index: 99999 !important; visibility: visible !important; opacity: 1 !important;"
         id="chatbot-button">
         <i class="fa-solid fa-comments text-xl"></i>
-        <span x-show="unreadCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{{ unreadCount }}</span>
+        <span x-show="unreadCount > 0"
+            class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{{
+            unreadCount }}</span>
     </button>
 
     <!-- Chat Window -->
-    <div 
-        x-show="isOpen" 
-        x-transition:enter="transition ease-out duration-300"
-        x-transition:enter-start="opacity-0 scale-95"
-        x-transition:enter-end="opacity-100 scale-100"
-        x-transition:leave="transition ease-in duration-200"
-        x-transition:leave-start="opacity-100 scale-100"
+    <div x-show="isOpen" x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+        x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 scale-100"
         x-transition:leave-end="opacity-0 scale-95"
         class="bg-white rounded-lg shadow-2xl flex flex-col border border-gray-200"
         style="display: none; position: fixed !important; bottom: 24px !important; right: 24px !important; z-index: 99998 !important; width: 384px !important; height: 500px !important; max-width: 384px !important; max-height: 500px !important; min-width: 384px !important; min-height: 500px !important;"
         id="chatbot-window">
-        
+
         <!-- Header -->
-        <div class="bg-indigo-600 text-white px-4 py-3 rounded-t-lg flex items-center justify-between flex-shrink-0" style="height: 56px !important;">
+        <div class="bg-indigo-600 text-white px-4 py-3 rounded-t-lg flex items-center justify-between flex-shrink-0"
+            style="height: 56px !important;">
             <div class="flex items-center">
                 <i class="fa-solid fa-robot mr-2"></i>
                 <h3 class="font-semibold">Project Assistant</h3>
@@ -48,11 +45,27 @@
         </div>
 
         <!-- Messages Area -->
-        <div class="flex-1 overflow-y-auto p-4 space-y-4 flex-shrink-0" id="chat-messages" style="height: 350px !important; max-height: 350px !important; min-height: 350px !important; overflow-y: auto !important; overflow-x: hidden !important;">
+        <div class="flex-1 overflow-y-auto p-4 space-y-4 flex-shrink-0" id="chat-messages"
+            style="height: 350px !important; max-height: 350px !important; min-height: 350px !important; overflow-y: auto !important; overflow-x: hidden !important;">
             <div x-show="messages.length === 0 && !showGreeting" class="text-center text-gray-500 py-8">
                 <i class="fa-solid fa-comments text-4xl mb-3 text-gray-300"></i>
                 <p class="text-sm">Start a conversation with your Project Assistant</p>
                 <p class="text-xs text-gray-400 mt-2">Ask about projects, tasks, events, or request reports</p>
+                <!-- Suggested Prompts -->
+                <div class="mt-4 flex flex-wrap justify-center gap-2">
+                    <button @click="inputMessage='Show my pending tasks'; sendMessage()"
+                        class="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition-colors cursor-pointer">Show
+                        my pending tasks</button>
+                    <button @click="inputMessage='Create a new meeting'; sendMessage()"
+                        class="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition-colors cursor-pointer">Create
+                        a new meeting</button>
+                    <button @click="inputMessage='Any events today?'; sendMessage()"
+                        class="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition-colors cursor-pointer">Any
+                        events today?</button>
+                    <button @click="inputMessage='Summarize my projects'; sendMessage()"
+                        class="px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition-colors cursor-pointer">Summarize
+                        my projects</button>
+                </div>
             </div>
             <!-- Greeting Message -->
             <div x-show="showGreeting && messages.length === 0" class="flex justify-start">
@@ -60,32 +73,41 @@
                     <div class="flex items-start">
                         <i class="fa-solid fa-robot text-indigo-600 mr-2 mt-1"></i>
                         <div>
-                            <p class="text-sm text-gray-800 font-medium mb-1">Hello! 👋</p>
+                            <p class="text-sm text-gray-800 font-medium mb-1">Hello! ≡ƒæï</p>
                             <p class="text-sm text-gray-700">I'm your Project Assistant. How can I help you today?</p>
-                            <p class="text-xs text-gray-500 mt-2">You can ask about projects, tasks, events, or request reports.</p>
-                            <p class="text-xs text-indigo-600 mt-2 font-semibold">💡 Try voice commands! Click the microphone icon to speak your commands.</p>
-                            <p class="text-xs text-gray-500 mt-1">Commands: "Create task [name]", "Update project [name]", "Complete task #123"</p>
+                            <p class="text-xs text-gray-500 mt-2">You can ask about projects, tasks, events, or request
+                                reports.</p>
+                            <p class="text-xs text-indigo-600 mt-2 font-semibold">≡ƒÆí Try voice commands! Click the
+                                microphone icon to speak your commands.</p>
+                            <p class="text-xs text-gray-500 mt-1">Commands: "Create task [name]", "Update project
+                                [name]", "Complete task #123"</p>
                         </div>
                     </div>
                 </div>
             </div>
             <template x-for="(message, index) in messages" :key="index">
                 <div class="flex" :class="message.role === 'user' ? 'justify-end' : 'justify-start'">
-                    <div 
-                        class="max-w-[80%] rounded-lg px-4 py-2"
+                    <div class="max-w-[80%] rounded-lg px-4 py-2"
                         :class="message.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-800'">
-                        <p class="text-sm whitespace-pre-wrap" x-text="message.content"></p>
+                        <div x-show="message.role === 'assistant'" class="text-sm markdown-body"
+                            x-html="parseMarkdown(message.content)"></div>
+                        <p x-show="message.role === 'user'" class="text-sm whitespace-pre-wrap"
+                            x-text="message.content"></p>
                         <p class="text-xs mt-1 opacity-70" x-text="formatTime(message.timestamp)"></p>
                     </div>
                 </div>
             </template>
             <template x-if="isLoading">
                 <div class="flex justify-start mt-2">
-                    <div class="max-w-[80%] rounded-lg px-4 py-3 bg-gray-100 text-gray-800 shadow-sm border border-gray-200">
+                    <div
+                        class="max-w-[80%] rounded-lg px-4 py-3 bg-gray-100 text-gray-800 shadow-sm border border-gray-200">
                         <div class="flex items-center space-x-2.5">
-                            <div class="w-3.5 h-3.5 bg-indigo-600 rounded-full" style="animation: bounce 1.4s infinite; animation-delay: 0s;"></div>
-                            <div class="w-3.5 h-3.5 bg-indigo-600 rounded-full" style="animation: bounce 1.4s infinite; animation-delay: 0.2s;"></div>
-                            <div class="w-3.5 h-3.5 bg-indigo-600 rounded-full" style="animation: bounce 1.4s infinite; animation-delay: 0.4s;"></div>
+                            <div class="w-3.5 h-3.5 bg-indigo-600 rounded-full"
+                                style="animation: bounce 1.4s infinite; animation-delay: 0s;"></div>
+                            <div class="w-3.5 h-3.5 bg-indigo-600 rounded-full"
+                                style="animation: bounce 1.4s infinite; animation-delay: 0.2s;"></div>
+                            <div class="w-3.5 h-3.5 bg-indigo-600 rounded-full"
+                                style="animation: bounce 1.4s infinite; animation-delay: 0.4s;"></div>
                         </div>
                     </div>
                 </div>
@@ -93,27 +115,21 @@
         </div>
 
         <!-- Input Area -->
-        <div class="border-t border-gray-200 p-4 flex-shrink-0" style="height: 94px !important;">
-            <form @submit.prevent="sendMessage()" class="flex space-x-2">
-                <input 
-                    type="text" 
-                    x-model="inputMessage"
-                    @keydown.enter.prevent="sendMessage()"
-                    placeholder="Type your message or use voice..." 
+        <div class="border-t border-gray-200 p-4 flex-shrink-0" style="min-height: 70px;">
+            <form @submit.prevent="sendMessage()" class="flex space-x-2 items-end">
+                <textarea x-model="inputMessage" @keydown.enter.exact.prevent="sendMessage()"
+                    @keydown.shift.enter="true"
+                    @input="$event.target.style.height = 'auto'; $event.target.style.height = Math.min($event.target.scrollHeight, 100) + 'px';"
+                    placeholder="Type your message or use voice..."
                     class="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    style="color: #111827 !important;"
-                    :disabled="isLoading || isListening">
-                <button 
-                    type="button"
-                    @click="toggleVoiceRecognition()"
-                    class="px-3 py-2 rounded-lg transition-colors"
+                    style="color: #111827 !important; resize: none; min-height: 40px; max-height: 100px; overflow-y: auto;"
+                    rows="1" :disabled="isLoading || isListening"></textarea>
+                <button type="button" @click="toggleVoiceRecognition()" class="px-3 py-2 rounded-lg transition-colors"
                     :class="isListening ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'"
-                    :disabled="isLoading"
-                    title="Voice Command">
+                    :disabled="isLoading" title="Voice Command">
                     <i class="fa-solid" :class="isListening ? 'fa-microphone-slash' : 'fa-microphone'"></i>
                 </button>
-                <button 
-                    type="submit"
+                <button type="submit"
                     class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                     :disabled="isLoading || !inputMessage.trim() || isListening">
                     <i class="fa-solid fa-paper-plane"></i>
@@ -128,392 +144,449 @@
 </div>
 
 <script>
-// Ensure widget is visible even before Alpine.js loads
-document.addEventListener('DOMContentLoaded', function() {
-    const widget = document.querySelector('[x-data="chatbotWidget()"]');
-    if (widget) {
-        widget.style.display = 'block';
-        widget.style.visibility = 'visible';
-        console.log('Chatbot widget container found and made visible');
-        
-        // Force button to be visible
-        const button = document.getElementById('chatbot-button');
-        if (button) {
-            button.style.display = 'flex';
-            button.style.visibility = 'visible';
-            button.style.opacity = '1';
-            button.style.position = 'fixed';
-            button.style.bottom = '24px';
-            button.style.right = '24px';
-            button.style.zIndex = '99999';
-            console.log('Chatbot button forced visible');
+    // Ensure widget is visible even before Alpine.js loads
+    document.addEventListener('DOMContentLoaded', function () {
+        const widget = document.querySelector('[x-data="chatbotWidget()"]');
+        if (widget) {
+            widget.style.display = 'block';
+            widget.style.visibility = 'visible';
+            console.log('Chatbot widget container found and made visible');
+
+            // Force button to be visible
+            const button = document.getElementById('chatbot-button');
+            if (button) {
+                button.style.display = 'flex';
+                button.style.visibility = 'visible';
+                button.style.opacity = '1';
+                button.style.position = 'fixed';
+                button.style.bottom = '24px';
+                button.style.right = '24px';
+                button.style.zIndex = '99999';
+                console.log('Chatbot button forced visible');
+            } else {
+                console.error('Chatbot button not found by ID!');
+            }
         } else {
-            console.error('Chatbot button not found by ID!');
+            console.error('Chatbot widget container not found!');
         }
-    } else {
-        console.error('Chatbot widget container not found!');
-    }
-});
+    });
 
-// Wait for Alpine.js to be ready
-document.addEventListener('alpine:init', () => {
-    console.log('Alpine.js initialized, registering chatbot widget');
-});
+    // Wait for Alpine.js to be ready
+    document.addEventListener('alpine:init', () => {
+        console.log('Alpine.js initialized, registering chatbot widget');
+    });
 
-function chatbotWidget() {
-    return {
-        isOpen: false,
-        messages: [],
-        inputMessage: '',
-        isLoading: false,
-        conversationId: null,
-        unreadCount: 0,
-        showGreeting: false,
-        greetingShown: false,
-        isListening: false,
-        recognition: null,
+    function chatbotWidget() {
+        return {
+            isOpen: false,
+            messages: [],
+            inputMessage: '',
+            isLoading: false,
+            conversationId: null,
+            unreadCount: 0,
+            showGreeting: false,
+            greetingShown: false,
+            isListening: false,
+            recognition: null,
 
-        init() {
-            console.log('Chatbot widget Alpine.js init called');
-            console.log('isOpen:', this.isOpen);
-            this.loadConversation();
-            this.initVoiceRecognition();
-        },
+            init() {
+                console.log('Chatbot widget Alpine.js init called');
+                console.log('isOpen:', this.isOpen);
+                this.loadConversation();
+                this.initVoiceRecognition();
+            },
 
-        initVoiceRecognition() {
-            // Check if browser supports Web Speech API
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                this.recognition = new SpeechRecognition();
-                this.recognition.continuous = false;
-                this.recognition.interimResults = false;
-                this.recognition.lang = 'en-US';
-                
-                this.recognition.onstart = () => {
-                    this.isListening = true;
-                    console.log('Voice recognition started');
-                };
-                
-                this.recognition.onresult = (event) => {
-                    const transcript = event.results[0][0].transcript;
-                    console.log('Voice transcript:', transcript);
-                    this.inputMessage = transcript;
-                    this.isListening = false;
-                    // Auto-send the voice command
-                    this.sendMessage();
-                };
-                
-                this.recognition.onerror = (event) => {
-                    console.error('Voice recognition error:', event.error);
-                    this.isListening = false;
-                    if (event.error === 'no-speech') {
-                        alert('No speech detected. Please try again.');
-                    } else if (event.error === 'not-allowed') {
-                        alert('Microphone permission denied. Please enable microphone access.');
-                    } else {
-                        alert('Voice recognition error: ' + event.error);
-                    }
-                };
-                
-                this.recognition.onend = () => {
-                    this.isListening = false;
-                    console.log('Voice recognition ended');
-                };
-            } else {
-                console.warn('Web Speech API not supported in this browser');
-            }
-        },
+            initVoiceRecognition() {
+                // Check if browser supports Web Speech API
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    this.recognition = new SpeechRecognition();
+                    this.recognition.continuous = false;
+                    this.recognition.interimResults = false;
+                    this.recognition.lang = 'en-US';
 
-        toggleVoiceRecognition() {
-            if (!this.recognition) {
-                alert('Voice recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
-                return;
-            }
-            
-            if (this.isListening) {
-                this.recognition.stop();
-                this.isListening = false;
-            } else {
-                try {
-                    this.recognition.start();
-                } catch (error) {
-                    console.error('Error starting voice recognition:', error);
-                    this.isListening = false;
+                    this.recognition.onstart = () => {
+                        this.isListening = true;
+                        console.log('Voice recognition started');
+                    };
+
+                    this.recognition.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        console.log('Voice transcript:', transcript);
+                        this.inputMessage = transcript;
+                        this.isListening = false;
+                        // Auto-send the voice command
+                        this.sendMessage();
+                    };
+
+                    this.recognition.onerror = (event) => {
+                        console.error('Voice recognition error:', event.error);
+                        this.isListening = false;
+                        if (event.error === 'no-speech') {
+                            alert('No speech detected. Please try again.');
+                        } else if (event.error === 'not-allowed') {
+                            alert('Microphone permission denied. Please enable microphone access.');
+                        } else {
+                            alert('Voice recognition error: ' + event.error);
+                        }
+                    };
+
+                    this.recognition.onend = () => {
+                        this.isListening = false;
+                        console.log('Voice recognition ended');
+                    };
+                } else {
+                    console.warn('Web Speech API not supported in this browser');
                 }
-            }
-        },
+            },
 
-        toggleChat() {
-            console.log('Toggle chat called, current isOpen:', this.isOpen);
-            this.isOpen = !this.isOpen;
-            console.log('New isOpen:', this.isOpen);
-            if (this.isOpen) {
-                this.unreadCount = 0;
-                // Force chat window to be visible with fixed size
-                const chatWindow = document.getElementById('chatbot-window');
-                if (chatWindow) {
-                    chatWindow.style.display = 'flex';
-                    chatWindow.style.visibility = 'visible';
-                    chatWindow.style.opacity = '1';
-                    // Enforce fixed dimensions
-                    chatWindow.style.width = '384px';
-                    chatWindow.style.height = '500px';
-                    chatWindow.style.maxWidth = '384px';
-                    chatWindow.style.maxHeight = '500px';
-                    chatWindow.style.minWidth = '384px';
-                    chatWindow.style.minHeight = '500px';
-                    console.log('Chat window forced visible with fixed size');
-                }
-                // Show greeting message if not shown before
-                if (!this.greetingShown && this.messages.length === 0) {
-                    this.showGreeting = true;
-                    this.greetingShown = true;
-                    this.playSound('greeting');
-                }
-                this.scrollToBottom();
-            } else {
-                // Hide chat window when closing
-                const chatWindow = document.getElementById('chatbot-window');
-                if (chatWindow) {
-                    chatWindow.style.display = 'none';
-                }
-            }
-        },
-
-        async loadConversation() {
-            try {
-                const response = await fetch('/api/chatbot/message/', {
-                    method: 'GET',
-                    headers: {
-                        'X-CSRFToken': this.getCookie('csrftoken')
-                    }
-                });
-                
-                if (!response.ok) {
-                    console.error('Failed to load conversation:', response.status, response.statusText);
+            toggleVoiceRecognition() {
+                if (!this.recognition) {
+                    alert('Voice recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
                     return;
                 }
-                
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    console.error('Response is not JSON:', contentType);
-                    return;
+
+                if (this.isListening) {
+                    this.recognition.stop();
+                    this.isListening = false;
+                } else {
+                    try {
+                        this.recognition.start();
+                    } catch (error) {
+                        console.error('Error starting voice recognition:', error);
+                        this.isListening = false;
+                    }
                 }
-                
-                const data = await response.json();
-                if (data.conversation_id) {
-                    this.conversationId = data.conversation_id;
-                    this.messages = data.messages || [];
-                    // If no messages, show greeting
-                    if (this.messages.length === 0 && !this.greetingShown) {
+            },
+
+            toggleChat() {
+                console.log('Toggle chat called, current isOpen:', this.isOpen);
+                this.isOpen = !this.isOpen;
+                console.log('New isOpen:', this.isOpen);
+                if (this.isOpen) {
+                    this.unreadCount = 0;
+                    // Force chat window to be visible with fixed size
+                    const chatWindow = document.getElementById('chatbot-window');
+                    if (chatWindow) {
+                        chatWindow.style.display = 'flex';
+                        chatWindow.style.visibility = 'visible';
+                        chatWindow.style.opacity = '1';
+                        // Enforce fixed dimensions
+                        chatWindow.style.width = '384px';
+                        chatWindow.style.height = '500px';
+                        chatWindow.style.maxWidth = '384px';
+                        chatWindow.style.maxHeight = '500px';
+                        chatWindow.style.minWidth = '384px';
+                        chatWindow.style.minHeight = '500px';
+                        console.log('Chat window forced visible with fixed size');
+                    }
+                    // Show greeting message if not shown before
+                    if (!this.greetingShown && this.messages.length === 0) {
                         this.showGreeting = true;
                         this.greetingShown = true;
                         this.playSound('greeting');
                     }
-                    this.$nextTick(() => this.scrollToBottom());
-                }
-            } catch (error) {
-                console.error('Error loading conversation:', error);
-            }
-        },
-
-        async sendMessage() {
-            if (!this.inputMessage.trim() || this.isLoading) return;
-
-            const userMessage = this.inputMessage.trim();
-            this.inputMessage = '';
-            
-            // Hide greeting when user sends first message
-            if (this.showGreeting) {
-                this.showGreeting = false;
-            }
-            
-            // Add user message to UI
-            this.messages.push({
-                role: 'user',
-                content: userMessage,
-                timestamp: new Date().toISOString()
-            });
-            
-            // Set loading state and scroll
-            this.isLoading = true;
-            console.log('Loading state set to:', this.isLoading);
-            // Force immediate UI update and ensure loading indicator appears
-            this.$nextTick(() => {
-                this.scrollToBottom();
-                // Double-check loading indicator is visible
-                const loadingIndicator = document.querySelector('#chat-messages template');
-                if (loadingIndicator && this.isLoading) {
-                    console.log('Loading indicator should be visible now');
-                }
-            });
-            // Force scroll again after a brief delay to ensure loading indicator is visible
-            setTimeout(() => {
-                if (this.isLoading) {
                     this.scrollToBottom();
-                }
-            }, 150);
-
-            try {
-                const response = await fetch('/api/chatbot/message/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': this.getCookie('csrftoken')
-                    },
-                    body: JSON.stringify({
-                        message: userMessage,
-                        conversation_id: this.conversationId
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    const text = await response.text();
-                    throw new Error(`Expected JSON but got: ${contentType}. Response: ${text.substring(0, 100)}`);
-                }
-
-                const data = await response.json();
-                
-                if (data.error) {
-                    this.messages.push({
-                        role: 'assistant',
-                        content: `Error: ${data.error}`,
-                        timestamp: new Date().toISOString()
-                    });
                 } else {
-                    this.conversationId = data.conversation_id;
-                    // Hide greeting when first message is sent
-                    if (this.showGreeting) {
-                        this.showGreeting = false;
-                    }
-                    this.messages.push({
-                        role: 'assistant',
-                        content: data.response,
-                        timestamp: data.timestamp
-                    });
-                    // Play notification sound for new message
-                    this.playSound('message');
-                    
-                    // Handle navigation commands
-                    if (data.navigate && data.url) {
-                        // Small delay to show the message before navigating
-                        setTimeout(() => {
-                            window.location.href = data.url;
-                        }, 500);
+                    // Hide chat window when closing
+                    const chatWindow = document.getElementById('chatbot-window');
+                    if (chatWindow) {
+                        chatWindow.style.display = 'none';
                     }
                 }
-            } catch (error) {
-                console.error('Chatbot error:', error);
+            },
+
+            async loadConversation() {
+                try {
+                    const response = await fetch('/chatbot/message/', {
+                        method: 'GET',
+                        headers: {
+                            'X-CSRFToken': this.getCookie('csrftoken')
+                        }
+                    });
+
+                    if (!response.ok) {
+                        console.error('Failed to load conversation:', response.status, response.statusText);
+                        return;
+                    }
+
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        console.error('Response is not JSON:', contentType);
+                        return;
+                    }
+
+                    const data = await response.json();
+                    if (data.conversation_id) {
+                        this.conversationId = data.conversation_id;
+                        this.messages = data.messages || [];
+                        // If no messages, show greeting
+                        if (this.messages.length === 0 && !this.greetingShown) {
+                            this.showGreeting = true;
+                            this.greetingShown = true;
+                            this.playSound('greeting');
+                        }
+                        this.$nextTick(() => this.scrollToBottom());
+                    }
+                } catch (error) {
+                    console.error('Error loading conversation:', error);
+                }
+            },
+
+            async sendMessage() {
+                if (!this.inputMessage.trim() || this.isLoading) return;
+
+                const userMessage = this.inputMessage.trim();
+                this.inputMessage = '';
+
+                // Hide greeting when user sends first message
+                if (this.showGreeting) {
+                    this.showGreeting = false;
+                }
+
+                // Add user message to UI
                 this.messages.push({
-                    role: 'assistant',
-                    content: 'Sorry, I encountered an error. Please check the console for details and try again.',
+                    role: 'user',
+                    content: userMessage,
                     timestamp: new Date().toISOString()
                 });
-            } finally {
-                this.isLoading = false;
-                console.log('Loading state set to:', this.isLoading);
-                this.$nextTick(() => this.scrollToBottom());
-            }
-        },
 
-        async newConversation() {
-            try {
-                const response = await fetch('/api/chatbot/new/', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': this.getCookie('csrftoken')
+                // Set loading state and scroll
+                this.isLoading = true;
+                console.log('Loading state set to:', this.isLoading);
+                // Force immediate UI update and ensure loading indicator appears
+                this.$nextTick(() => {
+                    this.scrollToBottom();
+                    // Double-check loading indicator is visible
+                    const loadingIndicator = document.querySelector('#chat-messages template');
+                    if (loadingIndicator && this.isLoading) {
+                        console.log('Loading indicator should be visible now');
                     }
                 });
-                const data = await response.json();
-                this.conversationId = data.conversation_id;
-                this.messages = [];
-                // Show greeting again for new conversation
-                this.showGreeting = true;
-                this.playSound('greeting');
-                this.scrollToBottom();
-            } catch (error) {
-                console.error('Error creating new conversation:', error);
-            }
-        },
+                // Force scroll again after a brief delay to ensure loading indicator is visible
+                setTimeout(() => {
+                    if (this.isLoading) {
+                        this.scrollToBottom();
+                    }
+                }, 150);
 
-        scrollToBottom() {
-            const messagesDiv = document.getElementById('chat-messages');
-            if (messagesDiv) {
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            }
-        },
+                try {
+                    const response = await fetch('/chatbot/message/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({
+                            message: userMessage,
+                            conversation_id: this.conversationId
+                        })
+                    });
 
-        formatTime(timestamp) {
-            if (!timestamp) return '';
-            const date = new Date(timestamp);
-            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        },
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
 
-        playSound(type) {
-            try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                let frequency, duration;
-                
-                if (type === 'greeting') {
-                    // Pleasant greeting sound (two-tone chime)
-                    frequency = 523.25; // C5 note
-                    duration = 0.2;
-                } else if (type === 'message') {
-                    // Notification sound (single beep)
-                    frequency = 659.25; // E5 note
-                    duration = 0.15;
-                } else {
-                    return;
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        const text = await response.text();
+                        throw new Error(`Expected JSON but got: ${contentType}. Response: ${text.substring(0, 100)}`);
+                    }
+
+                    const data = await response.json();
+
+                    if (data.error) {
+                        this.messages.push({
+                            role: 'assistant',
+                            content: `Error: ${data.error}`,
+                            timestamp: new Date().toISOString()
+                        });
+                    } else {
+                        this.conversationId = data.conversation_id;
+                        // Hide greeting when first message is sent
+                        if (this.showGreeting) {
+                            this.showGreeting = false;
+                        }
+                        this.messages.push({
+                            role: 'assistant',
+                            content: data.response,
+                            timestamp: data.timestamp
+                        });
+                        // Play notification sound for new message
+                        this.playSound('message');
+
+                        // Handle navigation commands
+                        if (data.navigate && data.url) {
+                            // Small delay to show the message before navigating
+                            setTimeout(() => {
+                                window.location.href = data.url;
+                            }, 500);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Chatbot error:', error);
+                    this.messages.push({
+                        role: 'assistant',
+                        content: 'Sorry, I encountered an error. Please check the console for details and try again.',
+                        timestamp: new Date().toISOString()
+                    });
+                } finally {
+                    this.isLoading = false;
+                    console.log('Loading state set to:', this.isLoading);
+                    this.$nextTick(() => this.scrollToBottom());
                 }
-                
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.frequency.value = frequency;
-                oscillator.type = 'sine';
-                
-                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-                
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + duration);
-            } catch (error) {
-                console.log('Sound playback not available:', error);
-            }
-        },
+            },
 
-        getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
+            async newConversation() {
+                try {
+                    const response = await fetch('/chatbot/new/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': this.getCookie('csrftoken')
+                        }
+                    });
+                    const data = await response.json();
+                    this.conversationId = data.conversation_id;
+                    this.messages = [];
+                    // Show greeting again for new conversation
+                    this.showGreeting = true;
+                    this.playSound('greeting');
+                    this.scrollToBottom();
+                } catch (error) {
+                    console.error('Error creating new conversation:', error);
+                }
+            },
+
+            scrollToBottom() {
+                const messagesDiv = document.getElementById('chat-messages');
+                if (messagesDiv) {
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                }
+            },
+
+            formatTime(timestamp) {
+                if (!timestamp) return '';
+                const date = new Date(timestamp);
+                return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            },
+
+            playSound(type) {
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    let frequency, duration;
+
+                    if (type === 'greeting') {
+                        // Pleasant greeting sound (two-tone chime)
+                        frequency = 523.25; // C5 note
+                        duration = 0.2;
+                    } else if (type === 'message') {
+                        // Notification sound (single beep)
+                        frequency = 659.25; // E5 note
+                        duration = 0.15;
+                    } else {
+                        return;
+                    }
+
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    oscillator.frequency.value = frequency;
+                    oscillator.type = 'sine';
+
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + duration);
+                } catch (error) {
+                    console.log('Sound playback not available:', error);
+                }
+            },
+
+            getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
                     }
                 }
-            }
-            // Fallback: try to get CSRF token from meta tag if available
-            if (!cookieValue && name === 'csrftoken') {
-                const metaTag = document.querySelector('meta[name=csrf-token]');
-                if (metaTag) {
-                    cookieValue = metaTag.getAttribute('content');
+                // Fallback: try to get CSRF token from meta tag if available
+                if (!cookieValue && name === 'csrftoken') {
+                    const metaTag = document.querySelector('meta[name=csrf-token]');
+                    if (metaTag) {
+                        cookieValue = metaTag.getAttribute('content');
+                    }
                 }
+                return cookieValue;
+            },
+
+            parseMarkdown(text) {
+                if (!text) return '';
+                try {
+                    return typeof marked !== 'undefined' ? marked.parse(text) : text.replace(/\n/g, '<br>');
+                } catch (e) { return text; }
             }
-            return cookieValue;
         }
     }
-}
 </script>
-{% endif %}
-{% endif %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+    /* Markdown Styles for chat messages */
+    .markdown-body p {
+        margin: 0 0 6px;
+    }
 
+    .markdown-body p:last-child {
+        margin: 0;
+    }
+
+    .markdown-body strong {
+        font-weight: 700;
+    }
+
+    .markdown-body ul,
+    .markdown-body ol {
+        margin: 4px 0 6px 16px;
+        padding: 0;
+    }
+
+    .markdown-body li {
+        margin-bottom: 3px;
+    }
+
+    .markdown-body pre {
+        background: rgba(0, 0, 0, 0.07);
+        padding: 8px;
+        border-radius: 6px;
+        overflow-x: auto;
+        font-size: 12px;
+        margin: 6px 0;
+    }
+
+    .markdown-body code {
+        background: rgba(0, 0, 0, 0.07);
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-family: monospace;
+        font-size: 12px;
+    }
+
+    .markdown-body a {
+        color: #6366f1;
+        text-decoration: none;
+    }
+
+    .markdown-body a:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endif %}
+{% endif %}

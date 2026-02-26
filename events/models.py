@@ -4,14 +4,39 @@ from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 
+
 class Event(models.Model):
+    class EventType(models.TextChoices):
+        MEETING = 'MEETING', 'Meeting'
+        WORKSHOP = 'WORKSHOP', 'Workshop'
+        TRAINING = 'TRAINING', 'Training'
+        SEMINAR = 'SEMINAR', 'Seminar'
+        OTHERS = 'OTHERS', 'Others'
+
+    class EventStatus(models.TextChoices):
+        UPCOMING = 'UPCOMING', 'Upcoming'
+        COMPLETED = 'COMPLETED', 'Completed'
+        CANCELLED = 'CANCELLED', 'Cancelled'
+
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
+    location = models.CharField(max_length=255, blank=True, null=True)
+    type = models.CharField(
+        max_length=20,
+        choices=EventType.choices,
+        default=EventType.MEETING
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=EventStatus.choices,
+        default=EventStatus.UPCOMING
+    )
+    agenda = models.TextField(blank=True, null=True)
     start_datetime = models.DateTimeField(default=timezone.now)
     end_datetime = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, 
-        on_delete=models.SET_NULL, 
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
         null=True,
         related_name='events_created'
     )
@@ -21,13 +46,17 @@ class Event(models.Model):
         related_name='events_participated'
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
 
     def get_absolute_url(self):
-        # We will create this URL later
-        return reverse('event_list') # Placeholder
+        return reverse('event_list')
+
+    class Meta:
+        ordering = ['start_datetime']
+
 
 class Invitation(models.Model):
     class StatusChoices(models.TextChoices):
@@ -38,8 +67,8 @@ class Invitation(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
     invitee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     status = models.CharField(
-        max_length=10, 
-        choices=StatusChoices.choices, 
+        max_length=10,
+        choices=StatusChoices.choices,
         default=StatusChoices.PENDING
     )
 

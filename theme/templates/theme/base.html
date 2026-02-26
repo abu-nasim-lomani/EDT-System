@@ -1,50 +1,105 @@
-{% load static %}
+{%load static%}
 <!DOCTYPE html>
 <html lang="en" class="h-full bg-slate-50">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}DecisionTracker{% endblock %}</title>
-    <link href="{% static 'css/dist/styles.css' %}" rel="stylesheet">
+    <title>{%block title%}DecisionTracker{%endblock%}</title>
+    <link href="{%static 'css/dist/styles.css'%}" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
-    <style> body { font-family: 'Inter', sans-serif; } </style>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
 </head>
+
 <body class="h-full font-sans antialiased">
     <div x-data="{ sidebarOpen: false }">
         <div x-show="sidebarOpen" class="relative z-50 lg:hidden" role="dialog" aria-modal="true">
-            <div x-show="sidebarOpen" x-transition:enter="transition-opacity ease-linear duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-900/80"></div>
+            <div x-show="sidebarOpen" x-transition:enter="transition-opacity ease-linear duration-300"
+                x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-900/80"></div>
             <div class="fixed inset-0 flex">
-                <div x-show="sidebarOpen" x-transition:enter="transition ease-in-out duration-300 transform" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in-out duration-300 transform" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full" @click.away="sidebarOpen = false" class="relative mr-16 flex w-full max-w-xs flex-1">
+                <div x-show="sidebarOpen" x-transition:enter="transition ease-in-out duration-300 transform"
+                    x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0"
+                    x-transition:leave="transition ease-in-out duration-300 transform"
+                    x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full"
+                    @click.away="sidebarOpen = false" class="relative mr-16 flex w-full max-w-xs flex-1">
                     <div class="flex flex-col flex-grow bg-slate-800 pt-5 pb-4 overflow-y-auto">
                         <div class="flex items-center flex-shrink-0 px-4">
-                            <div class="bg-slate-900/50 rounded-lg p-2 mr-3"><i class="fa-solid fa-bullhorn text-indigo-400 text-xl"></i></div>
+                            <div class="bg-slate-900/50 rounded-lg p-2 mr-3"><i
+                                    class="fa-solid fa-bullhorn text-indigo-400 text-xl"></i></div>
                             <span class="text-white font-bold text-xl">DecisionTracker</span>
                         </div>
                         <nav class="mt-8 flex-1 px-3 space-y-1">
-                            <a href="{% url 'meeting_list' %}" class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i class="fa-solid fa-gauge-high mr-3 text-slate-400 w-6 text-center"></i> Dashboard</a>
-                            <a href="{% url 'my_tasks' %}" class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i class="fa-solid fa-tasks mr-3 text-slate-400 w-6 text-center"></i> My Tasks</a>
-                            <a href="{% url 'event_list' %}" class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i class="fa-solid fa-calendar-star mr-3 text-slate-400 w-6 text-center"></i> Events</a>
-                            <a href="{% url 'my_events' %}" class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i class="fa-solid fa-ticket mr-3 text-slate-400 w-6 text-center"></i> My Events</a>
-                            {% if request.user.is_superuser or request.user.role == 'MANAGEMENT' %}<a href="{% url 'management_dashboard' %}" class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i class="fa-solid fa-users-gear mr-3 text-slate-400 w-6 text-center"></i> Management</a>{% endif %}
-                            <a href="{% url 'profile' %}" class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i class="fa-solid fa-gear mr-3 text-slate-400 w-6 text-center"></i> Settings</a>
+                            <a href="{%url 'meeting_list'%}"
+                                class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i
+                                    class="fa-solid fa-gauge-high mr-3 text-slate-400 w-6 text-center"></i>
+                                Dashboard</a>
+                            <a href="{%url 'calendar'%}"
+                                class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i
+                                    class="fa-solid fa-calendar-days mr-3 text-indigo-400 w-6 text-center"></i> Routine
+                                Calendar</a>
+                            <a href="{%url 'my_tasks'%}"
+                                class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i
+                                    class="fa-solid fa-tasks mr-3 text-slate-400 w-6 text-center"></i> My Tasks</a>
+                            <a href="{%url 'event_list'%}"
+                                class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i
+                                    class="fa-solid fa-calendar-star mr-3 text-slate-400 w-6 text-center"></i>
+                                Events</a>
+                            <a href="{%url 'my_events'%}"
+                                class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i
+                                    class="fa-solid fa-ticket mr-3 text-slate-400 w-6 text-center"></i> My Events</a>
+                            {%if request.user.is_superuser or request.user.role == 'MANAGEMENT'%}<a
+                                href="{%url 'management_dashboard'%}"
+                                class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i
+                                    class="fa-solid fa-users-gear mr-3 text-slate-400 w-6 text-center"></i>
+                                Management</a>{%endif%}
+                            {%if request.user.is_authenticated%}<a href="{%url 'chatbot_page'%}"
+                                class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i
+                                    class="fa-solid fa-robot mr-3 text-indigo-400 w-6 text-center"></i> AI
+                                Assistant</a>{%endif%}
+                            <a href="{%url 'profile'%}"
+                                class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i
+                                    class="fa-solid fa-gear mr-3 text-slate-400 w-6 text-center"></i> Settings</a>
                         </nav>
                         <div class="px-4 py-4 border-t border-slate-700 mt-auto">
-                           {% if user.is_authenticated %}
+                            {%if user.is_authenticated%}
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center min-w-0">
-                                    <div class="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center mr-3 flex-shrink-0"><span class="font-bold text-indigo-300">{{ request.user.username|first|upper }}</span></div>
-                                    <div class="min-w-0"><p class="text-sm font-semibold text-white truncate">{{ request.user.username|capfirst }}</p><p class="text-xs font-medium text-slate-400 truncate">{{ request.user.get_role_display }}</p></div>
+                                    <div
+                                        class="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center mr-3 flex-shrink-0">
+                                        <span
+                                            class="font-bold text-indigo-300">{{request.user.username|first|upper}}</span>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-white truncate">
+                                            {{request.user.username|capfirst}}</p>
+                                        <p class="text-xs font-medium text-slate-400 truncate">
+                                            {{request.user.get_role_display}}</p>
+                                    </div>
                                 </div>
-                                <form action="{% url 'logout' %}" method="post"><{% csrf_token %}<button type="submit" title="Log Out" class="bg-slate-700/50 hover:bg-slate-700 w-9 h-9 rounded-lg flex items-center justify-center transition-colors flex-shrink-0"><i class="fa-solid fa-right-from-bracket text-slate-400 hover:text-white"></i></button></form>
+                                <form action="{%url 'logout'%}" method="post">
+                                    {%csrf_token%}
+                                    <button type="submit" title="Log Out"
+                                        class="bg-slate-700/50 hover:bg-slate-700 w-9 h-9 rounded-lg flex items-center justify-center transition-colors flex-shrink-0">
+                                        <i
+                                            class="fa-solid fa-right-from-bracket text-slate-400 hover:text-white"></i></button>
+                                </form>
                             </div>
-                            {% else %}
-                                <a href="{% url 'login' %}" class="sidebar-item group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-slate-300 hover:text-white hover:bg-slate-700/50"><i class="fa-solid fa-right-to-bracket mr-3 text-slate-400"></i> Log In</a>
-                            {% endif %}
+                            {%else%}
+                            <a href="{%url 'login'%}"
+                                class="sidebar-item group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-slate-300 hover:text-white hover:bg-slate-700/50"><i
+                                    class="fa-solid fa-right-to-bracket mr-3 text-slate-400"></i> Log In</a>
+                            {%endif%}
                         </div>
                     </div>
                 </div>
@@ -55,29 +110,67 @@
         <div class="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
             <div class="flex flex-col flex-grow bg-slate-800 pt-5 pb-4 overflow-y-auto shadow-xl">
                 <div class="flex items-center flex-shrink-0 px-4">
-                    <div class="bg-slate-900/50 rounded-lg p-2 mr-3"><i class="fa-solid fa-bullhorn text-indigo-400 text-xl"></i></div>
+                    <div class="bg-slate-900/50 rounded-lg p-2 mr-3"><i
+                            class="fa-solid fa-bullhorn text-indigo-400 text-xl"></i></div>
                     <span class="text-white font-bold text-xl">DecisionTracker</span>
                 </div>
                 <nav class="mt-8 flex-1 px-3 space-y-1">
-                    <a href="{% url 'meeting_list' %}" class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i class="fa-solid fa-gauge-high mr-3 text-slate-400 w-6 text-center"></i> Dashboard</a>
-                    <a href="{% url 'my_tasks' %}" class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i class="fa-solid fa-tasks mr-3 text-slate-400 w-6 text-center"></i> My Tasks</a>
-                    <a href="{% url 'event_list' %}" class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i class="fa-solid fa-calendar-star mr-3 text-slate-400 w-6 text-center"></i> Events</a>
-                    <a href="{% url 'my_events' %}" class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i class="fa-solid fa-ticket mr-3 text-slate-400 w-6 text-center"></i> My Events</a>
-                    {% if request.user.is_superuser or request.user.role == 'MANAGEMENT' %}<a href="{% url 'management_dashboard' %}" class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i class="fa-solid fa-users-gear mr-3 text-slate-400 w-6 text-center"></i> Management</a>{% endif %}
-                    <a href="{% url 'profile' %}" class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i class="fa-solid fa-gear mr-3 text-slate-400 w-6 text-center"></i> Settings</a>
+                    <a href="{%url 'meeting_list'%}"
+                        class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i
+                            class="fa-solid fa-gauge-high mr-3 text-slate-400 w-6 text-center"></i> Dashboard</a>
+                    <a href="{%url 'calendar'%}"
+                        class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i
+                            class="fa-solid fa-calendar-days mr-3 text-indigo-400 w-6 text-center"></i> Routine
+                        Calendar</a>
+                    <a href="{%url 'my_tasks'%}"
+                        class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i
+                            class="fa-solid fa-tasks mr-3 text-slate-400 w-6 text-center"></i> My Tasks</a>
+                    <a href="{%url 'event_list'%}"
+                        class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i
+                            class="fa-solid fa-calendar-star mr-3 text-slate-400 w-6 text-center"></i> Events</a>
+                    <a href="{%url 'my_events'%}"
+                        class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i
+                            class="fa-solid fa-ticket mr-3 text-slate-400 w-6 text-center"></i> My Events</a>
+                    {%if request.user.is_superuser or request.user.role == 'MANAGEMENT'%}<a
+                        href="{%url 'management_dashboard'%}"
+                        class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i
+                            class="fa-solid fa-users-gear mr-3 text-slate-400 w-6 text-center"></i>
+                        Management</a>{%endif%}
+                    {%if request.user.is_authenticated%}<a href="{%url 'chatbot_page'%}"
+                        class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i
+                            class="fa-solid fa-robot mr-3 text-indigo-400 w-6 text-center"></i> AI
+                        Assistant</a>{%endif%}
+                    <a href="{%url 'profile'%}"
+                        class="sidebar-item group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50"><i
+                            class="fa-solid fa-gear mr-3 text-slate-400 w-6 text-center"></i> Settings</a>
                 </nav>
                 <div class="px-4 py-4 border-t border-slate-700 mt-auto">
-                     {% if user.is_authenticated %}
+                    {%if user.is_authenticated%}
                     <div class="flex items-center justify-between">
                         <div class="flex items-center min-w-0">
-                            <div class="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center mr-3 flex-shrink-0"><span class="font-bold text-indigo-300">{{ request.user.username|first|upper }}</span></div>
-                            <div class="min-w-0"><p class="text-sm font-semibold text-white truncate">{{ request.user.username|capfirst }}</p><p class="text-xs font-medium text-slate-400 truncate">{{ request.user.get_role_display }}</p></div>
+                            <div
+                                class="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center mr-3 flex-shrink-0">
+                                <span class="font-bold text-indigo-300">{{request.user.username|first|upper}}</span>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-white truncate">{{request.user.username|capfirst}}
+                                </p>
+                                <p class="text-xs font-medium text-slate-400 truncate">{{request.user.get_role_display}}
+                                </p>
+                            </div>
                         </div>
-                        <form action="{% url 'logout' %}" method="post"><{% csrf_token %}<button type="submit" title="Log Out" class="bg-slate-700/50 hover:bg-slate-700 w-9 h-9 rounded-lg flex items-center justify-center transition-colors flex-shrink-0"><i class="fa-solid fa-right-from-bracket text-slate-400 hover:text-white"></i></button></form>
+                        <form action="{%url 'logout'%}" method="post">
+                            {%csrf_token%}
+                            <button type="submit" title="Log Out"
+                                class="bg-slate-700/50 hover:bg-slate-700 w-9 h-9 rounded-lg flex items-center justify-center transition-colors flex-shrink-0">
+                                <i class="fa-solid fa-right-from-bracket text-slate-400 hover:text-white"></i></button>
+                        </form>
                     </div>
-                    {% else %}
-                        <a href="{% url 'login' %}" class="sidebar-item group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-slate-300 hover:text-white hover:bg-slate-700/50"><i class="fa-solid fa-right-to-bracket mr-3 text-slate-400"></i> Log In</a>
-                    {% endif %}
+                    {%else%}
+                    <a href="{%url 'login'%}"
+                        class="sidebar-item group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-slate-300 hover:text-white hover:bg-slate-700/50"><i
+                            class="fa-solid fa-right-to-bracket mr-3 text-slate-400"></i> Log In</a>
+                    {%endif%}
                 </div>
             </div>
         </div>
@@ -85,53 +178,171 @@
         <div class="flex flex-col lg:pl-64">
             <main class="flex-1">
                 <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-sm shadow-sm">
-                     <div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 flex items-center justify-between">
+                    <div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 flex items-center justify-between">
                         <div class="flex items-center">
-                             <button @click="sidebarOpen = true" type="button" class="lg:hidden -ml-2 mr-2 p-2 rounded-md text-gray-500 hover:text-gray-900"><i class="fa-solid fa-bars text-xl"></i></button>
-                            <h1 class="text-2xl font-bold tracking-tight text-gray-900">{% block page_title %}Dashboard{% endblock %}</h1>
+                            <button @click="sidebarOpen = true" type="button"
+                                class="lg:hidden -ml-2 mr-2 p-2 rounded-md text-gray-500 hover:text-gray-900"><i
+                                    class="fa-solid fa-bars text-xl"></i></button>
+                            <h1 class="text-2xl font-bold tracking-tight text-gray-900">{%block page_title%}Dashboard{%endblock%}</h1>
                         </div>
-                        {% if request.user.is_superuser or request.user.role == 'MANAGEMENT' %}
-                        <div class="hidden sm:flex items-center space-x-4">
-                             <a href="{% url 'event_create' %}" class="bg-white hover:bg-gray-100 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium flex items-center transition-colors border shadow-sm"><i class="fa-solid fa-calendar-plus mr-2"></i> New Event</a>
-                            <a href="{% url 'meeting_create' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center transition-colors shadow-sm"><i class="fa-solid fa-plus mr-2"></i> New Meeting</a>
+                        <!-- Right side of header -->
+                        <div class="flex items-center space-x-3 sm:space-x-4">
+                            <!-- Notification Bell -->
+                            {%if request.user.is_authenticated%}
+                            <div class="relative" x-data="{ open: false }">
+                                <button @click="open = !open" @click.away="open = false"
+                                    class="relative p-2 text-slate-400 hover:text-indigo-600 focus:outline-none transition-colors">
+                                    <i class="fa-solid fa-bell text-xl"></i>
+                                    {%if unread_notifications_count > 0%}
+                                    <span id="notif-badge"
+                                        class="absolute top-1 right-1 flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-red-500 border-2 border-white rounded-full">{{unread_notifications_count}}</span>
+                                    {%endif%}
+                                </button>
+
+                                <!-- Dropdown panel -->
+                                <div x-show="open" x-transition.opacity style="display: none;"
+                                    class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden z-50">
+                                    <div
+                                        class="py-3 px-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                                        <h3 class="text-sm font-semibold text-slate-800">Notifications</h3>
+                                        {%if unread_notifications_count > 0%}
+                                        <button onclick="markNotificationRead(0, event)"
+                                            class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Mark all
+                                            read</button>
+                                        {%endif%}
+                                    </div>
+                                    <div class="max-h-80 overflow-y-auto">
+                                        {%for notif in recent_notifications%}
+                                        <div id="notif-row-{{notif.id}}"
+                                            class="px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-colors {%if not notif.is_read%}bg-indigo-50/40{%endif%}">
+                                            <a href="{%if notif.link%}{{notif.link}}{%else%}#{%endif%}" {%if not notif.is_read%}onclick="markNotificationRead({{notif.id}}, event)"
+                                                {%endif%} class="block">
+                                                <p
+                                                    class="text-sm text-slate-800 {%if not notif.is_read%}font-medium{%endif%}">
+                                                    {{notif.message}}</p>
+                                                <p class="text-[10px] text-slate-400 mt-1">
+                                                    {{notif.created_at|timesince}} ago</p>
+                                            </a>
+                                        </div>
+                                        {%empty%}
+                                        <div class="px-4 py-6 text-center text-slate-400">
+                                            <i class="fa-regular fa-bell-slash text-2xl mb-2 text-slate-300"></i>
+                                            <p class="text-xs">No notifications yet</p>
+                                        </div>
+                                        {%endfor%}
+                                    </div>
+                                </div>
+                            </div>
+                            {%endif%}
+
+                            {%if request.user.is_superuser or request.user.role == 'MANAGEMENT'%}
+                            <div class="hidden sm:flex items-center space-x-2">
+                                <a href="{%url 'event_create'%}"
+                                    class="bg-white hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center transition-colors border shadow-sm"><i
+                                        class="fa-solid fa-calendar-plus mr-1.5"></i> Event</a>
+                                <a href="{%url 'meeting_create'%}"
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium flex items-center transition-colors shadow-sm"><i
+                                        class="fa-solid fa-plus mr-1.5"></i> Meeting</a>
+                            </div>
+                            {%endif%}
                         </div>
-                        {% endif %}
                     </div>
                 </header>
                 <div class="py-6">
                     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                         {% if messages %}
+                        {%if messages%}
                         <div class="space-y-3 mb-6">
-                            {% for message in messages %}
-                                <div x-data="{ show: true }" x-show="show" x-transition class="relative rounded-md p-4 {% if message.tags == 'success' %} bg-green-50 border border-green-300 text-green-800 {% elif message.tags == 'warning' %} bg-yellow-50 border-yellow-300 text-yellow-800 {% else %} bg-red-50 border border-red-300 text-red-800 {% endif %}">
-                                    <div class="flex">
-                                        <div class="flex-shrink-0">{% if message.tags == 'success' %}<i class="fa-solid fa-check-circle"></i>{% elif message.tags == 'warning' %}<i class="fa-solid fa-exclamation-triangle"></i>{% else %}<i class="fa-solid fa-times-circle"></i>{% endif %}</div>
-                                        <div class="ml-3"><p class="text-sm font-medium">{{ message }}</p></div>
-                                        <div class="ml-auto pl-3"><div class="-mx-1.5 -my-1.5"><button @click="show = false" type="button" class="inline-flex rounded-md p-1.5 focus:outline-none {% if message.tags == 'success' %} text-green-500 hover:bg-green-100 {% elif message.tags == 'warning' %} text-yellow-500 hover:bg-yellow-100 {% else %} text-red-500 hover:bg-red-100 {% endif %}"><i class="fa-solid fa-times"></i></button></div></div>
+                            {%for message in messages%}
+                            <div x-data="{ show: true }" x-show="show" x-transition
+                                class="relative rounded-md p-4 {%if message.tags == 'success'%} bg-green-50 border border-green-300 text-green-800 {%elif message.tags == 'warning'%} bg-yellow-50 border-yellow-300 text-yellow-800 {%else%} bg-red-50 border border-red-300 text-red-800 {%endif%}">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">{%if message.tags == 'success'%}<i
+                                            class="fa-solid fa-check-circle"></i>{%elif message.tags == 'warning'%}<i
+                                            class="fa-solid fa-exclamation-triangle"></i>{%else%}<i
+                                            class="fa-solid fa-times-circle"></i>{%endif%}</div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium">{{message}}</p>
+                                    </div>
+                                    <div class="ml-auto pl-3">
+                                        <div class="-mx-1.5 -my-1.5"><button @click="show = false" type="button"
+                                                class="inline-flex rounded-md p-1.5 focus:outline-none {%if message.tags == 'success'%} text-green-500 hover:bg-green-100 {%elif message.tags == 'warning'%} text-yellow-500 hover:bg-yellow-100 {%else%} text-red-500 hover:bg-red-100 {%endif%}"><i
+                                                    class="fa-solid fa-times"></i></button></div>
                                     </div>
                                 </div>
-                            {% endfor %}
+                            </div>
+                            {%endfor%}
                         </div>
-                        {% endif %}
-                        {% block content %}{% endblock %}
+                        {%endif%}
+                        {%block content%}{%endblock%}
                     </div>
                 </div>
             </main>
         </div>
     </div>
-    
+
     <div class="lg:hidden fixed bottom-0 left-0 z-40 w-full h-16 bg-white border-t border-gray-200">
         <div class="grid h-full max-w-lg grid-cols-5 mx-auto font-medium">
-            <a href="{% url 'meeting_list' %}" class="mobile-nav-item inline-flex flex-col items-center justify-center px-5 group"><i class="fa-solid fa-gauge-high text-gray-500 group-hover:text-indigo-600"></i><span class="text-xs text-gray-500 group-hover:text-indigo-600">Dashboard</span></a>
-            <a href="{% url 'my_tasks' %}" class="mobile-nav-item inline-flex flex-col items-center justify-center px-5 group"><i class="fa-solid fa-tasks text-gray-500 group-hover:text-indigo-600"></i><span class="text-xs text-gray-500 group-hover:text-indigo-600">My Tasks</span></a>
+            <a href="{%url 'meeting_list'%}"
+                class="mobile-nav-item inline-flex flex-col items-center justify-center px-5 group"><i
+                    class="fa-solid fa-gauge-high text-gray-500 group-hover:text-indigo-600"></i><span
+                    class="text-xs text-gray-500 group-hover:text-indigo-600">Dashboard</span></a>
+            <a href="{%url 'my_tasks'%}"
+                class="mobile-nav-item inline-flex flex-col items-center justify-center px-5 group"><i
+                    class="fa-solid fa-tasks text-gray-500 group-hover:text-indigo-600"></i><span
+                    class="text-xs text-gray-500 group-hover:text-indigo-600">My Tasks</span></a>
             <div class="flex items-center justify-center">
-                {% if request.user.is_superuser or request.user.role == 'MANAGEMENT' %}<a href="{% url 'meeting_create' %}" class="inline-flex items-center justify-center w-14 h-14 font-medium bg-indigo-600 rounded-full hover:bg-indigo-700 group -mt-6 border-4 border-white"><i class="fa-solid fa-plus text-white text-2xl"></i></a>{% endif %}
+                {%if request.user.is_superuser or request.user.role == 'MANAGEMENT'%}<a href="{%url 'meeting_create'%}"
+                    class="inline-flex items-center justify-center w-14 h-14 font-medium bg-indigo-600 rounded-full hover:bg-indigo-700 group -mt-6 border-4 border-white"><i
+                        class="fa-solid fa-plus text-white text-2xl"></i></a>{%endif%}
             </div>
-            <a href="{% url 'event_list' %}" class="mobile-nav-item inline-flex flex-col items-center justify-center px-5 group"><i class="fa-solid fa-calendar-star text-gray-500 group-hover:text-indigo-600"></i><span class="text-xs text-gray-500 group-hover:text-indigo-600">Events</span></a>
-            <a href="{% url 'profile' %}" class="mobile-nav-item inline-flex flex-col items-center justify-center px-5 group"><i class="fa-solid fa-gear text-gray-500 group-hover:text-indigo-600"></i><span class="text-xs text-gray-500 group-hover:text-indigo-600">Settings</span></a>
+            <a href="{%url 'event_list'%}"
+                class="mobile-nav-item inline-flex flex-col items-center justify-center px-5 group"><i
+                    class="fa-solid fa-calendar-star text-gray-500 group-hover:text-indigo-600"></i><span
+                    class="text-xs text-gray-500 group-hover:text-indigo-600">Events</span></a>
+            <a href="{%url 'profile'%}"
+                class="mobile-nav-item inline-flex flex-col items-center justify-center px-5 group"><i
+                    class="fa-solid fa-gear text-gray-500 group-hover:text-indigo-600"></i><span
+                    class="text-xs text-gray-500 group-hover:text-indigo-600">Settings</span></a>
         </div>
     </div>
-    
-    <script src="{% static 'theme/main.js' %}"></script>
+
+    <script src="{%static 'theme/main.js'%}"></script>
+
+    <script>
+        function markNotificationRead(notifId, event) {
+            // Keep the link behavior working by not preventing default
+            fetch(`/notifications/read/${notifId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{csrf_token}}',
+                }
+            }).then(res => res.json()).then(data => {
+                if (data.status === 'success') {
+                    if (notifId === 0) {
+                        // Mark all
+                        document.querySelectorAll('[id^="notif-row-"]').forEach(el => {
+                            el.classList.remove('bg-indigo-50/40');
+                            const txt = el.querySelector('p.text-slate-800');
+                            if (txt) txt.classList.remove('font-medium');
+                        });
+                        const badge = document.getElementById('notif-badge');
+                        if (badge) badge.style.display = 'none';
+                    } else {
+                        // Mark single
+                        const row = document.getElementById(`notif-row-${notifId}`);
+                        if (row) {
+                            row.classList.remove('bg-indigo-50/40');
+                            const txt = row.querySelector('p.text-slate-800');
+                            if (txt) txt.classList.remove('font-medium');
+                        }
+                    }
+                }
+            }).catch(err => console.error(err));
+        }
+    </script>
+
+    {# Chatbot Widget - Available on all pages #}
+    {%include 'chatbot/chat_widget.html'%}
 </body>
+
 </html>

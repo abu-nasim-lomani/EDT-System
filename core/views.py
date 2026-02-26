@@ -9,6 +9,7 @@ from .models import Meeting, Task
 from accounts.models import User
 from .forms import MeetingForm, TaskCreateForm, TaskUpdateForm
 from .utils import is_privileged_user
+from events.models import Event
 
 @login_required
 def meeting_list(request):
@@ -131,8 +132,8 @@ def task_delete(request, pk):
 def my_tasks(request):
     all_user_tasks = Task.objects.filter(owner=request.user)
     pending_tasks = all_user_tasks.filter(status=Task.StatusChoices.PENDING).order_by('due_date')
-    inprogress_tasks = all_user_tasks.filter(status=Task.StatusChoices.IN_PROGRESS).order_by('due_date')
-    blocked_tasks = all_user_tasks.filter(status=Task.StatusChoices.BLOCKED).order_by('due_date')
+    inprogress_tasks = all_user_tasks.filter(status=Task.StatusChoices.ONGOING).order_by('due_date')
+    blocked_tasks = all_user_tasks.filter(status=Task.StatusChoices.HOLDING).order_by('due_date')
     completed_tasks = all_user_tasks.filter(status=Task.StatusChoices.COMPLETED).order_by('-updated_at')
     context = {
         'pending_tasks': pending_tasks,
@@ -170,3 +171,90 @@ def management_report(request, manager_id=None):
         'selected_manager': selected_manager,
     }
     return render(request, 'core/management_report.html', context)
+
+
+from django.http import JsonResponse
+from .models import Notification
+from django.views.decorators.http import require_POST
+
+@login_required
+@require_POST
+def mark_notification_read(request, notification_id):
+    if notification_id == 0:
+        # 0 means mark all as read
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return JsonResponse({'status': 'success', 'marked_all': True})
+    else:
+        try:
+            notification = Notification.objects.get(id=notification_id, user=request.user)
+            notification.is_read = True
+            notification.save()
+            return JsonResponse({'status': 'success', 'marked_all': False})
+        except Notification.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Not found'}, status=404)
+
+import json
+
+@login_required
+def calendar_view(request):
+    """
+    Renders the FullCalendar containing the user's meetings and events.
+    """
+    events_data = []
+
+    # Get Meetings
+    if is_privileged_user(request.user):
+        meetings = Meeting.objects.all()
+    else:
+        meetings = Meeting.objects.filter(participants=request.user).distinct()
+        
+    for meeting in meetings:
+        # Calculate end time based on duration (duration is in minutes)
+        from datetime import timedelta
+        end_time = meeting.meeting_time + timedelta(minutes=meeting.duration)
+        
+        events_data.append({
+            'id': f'meeting_{meeting.id}',
+            'title': f'(Meeting) {meeting.title}',
+            'start': meeting.meeting_time.isoformat(),
+            'end': end_time.isoformat(),
+            'url': meeting.get_absolute_url(),
+            'backgroundColor': '#4f46e5', # Indigo (Tailwind primary)
+            'borderColor': '#4338ca',
+            'textColor': '#ffffff',
+            'extendedProps': {
+                'type': 'Meeting',
+                'status': meeting.get_status_display()
+            }
+        })
+
+    # Get Events
+    if is_privileged_user(request.user):
+        events = Event.objects.all()
+    else:
+        events = Event.objects.filter(
+            Q(created_by=request.user) | Q(participants=request.user)
+        ).distinct()
+
+    for event in events:
+        end_time = event.end_datetime if event.end_datetime else event.start_datetime + timedelta(hours=1)
+        
+        events_data.append({
+            'id': f'event_{event.id}',
+            'title': f'(Event) {event.title}',
+            'start': event.start_datetime.isoformat(),
+            'end': end_time.isoformat(),
+            'url': event.get_absolute_url(),
+            'backgroundColor': '#10b981', # Emerald
+            'borderColor': '#059669',
+            'textColor': '#ffffff',
+            'extendedProps': {
+                'type': 'Event',
+                'location': event.location or 'N/A'
+            }
+        })
+
+    context = {
+        'events_json': json.dumps(events_data)
+    }
+    return render(request, 'core/calendar.html', context)

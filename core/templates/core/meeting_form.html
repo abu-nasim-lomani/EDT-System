@@ -1,14 +1,14 @@
-{% extends 'theme/base.html' %}
+{%extends 'theme/base.html'%}
 
-{% block title %}
-    {% if form.instance.pk %}Edit Meeting - DecisionTracker{% else %}Schedule New Meeting - DecisionTracker{% endif %}
-{% endblock %}
+{%block title%}
+{%if form.instance.pk%}Edit Meeting - DecisionTracker{%else%}Schedule New Meeting - DecisionTracker{%endif%}
+{%endblock%}
 
-{% block page_title %}
-    {% if form.instance.pk %}Edit "{{ form.instance.title }}"{% else %}Schedule a New Meeting{% endif %}
-{% endblock %}
+{%block page_title%}
+{%if form.instance.pk%}Edit "{{form.instance.title}}"{%else%}Schedule a New Meeting{%endif%}
+{%endblock%}
 
-{% block content %}
+{%block content%}
 <div class="max-w-4xl mx-auto space-y-6">
     <!-- Header Card -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -16,14 +16,14 @@
             <div>
                 <h2 class="text-2xl font-bold text-gray-900 flex items-center">
                     <i class="fa-solid fa-calendar-plus mr-3 text-blue-600"></i>
-                    {% if form.instance.pk %}Edit Meeting{% else %}Schedule New Meeting{% endif %}
+                    {%if form.instance.pk%}Edit Meeting{%else%}Schedule New Meeting{%endif%}
                 </h2>
                 <p class="text-sm text-gray-600 mt-2">
-                    {% if form.instance.pk %}
-                        Update the meeting details and participants
-                    {% else %}
-                        Create a new meeting with agenda and participants
-                    {% endif %}
+                    {%if form.instance.pk%}
+                    Update the meeting details and participants
+                    {%else%}
+                    Create a new meeting with agenda and participants
+                    {%endif%}
                 </p>
             </div>
             <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -40,34 +40,35 @@
                 Meeting Details
             </h3>
         </div>
-        
+
         <form method="post" class="p-6 space-y-8">
-            {% csrf_token %}
-            
+            {%csrf_token%}
+
             <!-- Basic Information -->
             <div class="space-y-6">
                 <div class="space-y-2">
-                    <label for="{{ form.title.id_for_label }}" class="block text-sm font-semibold text-gray-700">
-                        {{ form.title.label }}
+                    <label for="{{form.title.id_for_label}}" class="block text-sm font-semibold text-gray-700">
+                        {{form.title.label}}
                     </label>
-                    {{ form.title }}
-                    {% if form.title.help_text %}
-                    <p class="text-xs text-gray-500 mt-1">{{ form.title.help_text }}</p>
-                    {% endif %}
+                    {{form.title}}
+                    {%if form.title.help_text%}
+                    <p class="text-xs text-gray-500 mt-1">{{form.title.help_text}}</p>
+                    {%endif%}
                 </div>
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-2">
-                        <label for="{{ form.meeting_time.id_for_label }}" class="block text-sm font-semibold text-gray-700">
-                            {{ form.meeting_time.label }}
+                        <label for="{{form.meeting_time.id_for_label}}"
+                            class="block text-sm font-semibold text-gray-700">
+                            {{form.meeting_time.label}}
                         </label>
-                        {{ form.meeting_time }}
+                        {{form.meeting_time}}
                     </div>
                     <div class="space-y-2">
-                        <label for="{{ form.duration.id_for_label }}" class="block text-sm font-semibold text-gray-700">
-                            {{ form.duration.label }}
+                        <label for="{{form.duration.id_for_label}}" class="block text-sm font-semibold text-gray-700">
+                            {{form.duration.label}}
                         </label>
-                        {{ form.duration }}
+                        {{form.duration}}
                     </div>
                 </div>
             </div>
@@ -75,86 +76,101 @@
             <!-- Meeting Type - FIXED -->
             <div class="space-y-4">
                 <label class="block text-sm font-semibold text-gray-700">
-                    {{ form.meeting_type.label }}
+                    {{form.meeting_type.label}}
                 </label>
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    {% for radio in form.meeting_type %}
+                    {%for radio in form.meeting_type%}
                     <div>
-                        <input type="radio" name="{{ form.meeting_type.name }}" value="{{ radio.data.value }}" 
-                               id="{{ radio.id_for_label }}" 
-                               class="hidden peer" 
-                               {% if radio.data.selected %}checked{% endif %}>
-                        <label for="{{ radio.id_for_label }}" 
-                               class="block p-4 border-2 border-gray-200 rounded-xl text-center cursor-pointer transition-all duration-200 
+                        <input type="radio" name="{{form.meeting_type.name}}" value="{{radio.data.value}}"
+                            id="{{radio.id_for_label}}" class="hidden peer" {%if radio.data.selected%}checked{%endif%}>
+                        <label for="{{radio.id_for_label}}"
+                            class="block p-4 border-2 border-gray-200 rounded-xl text-center cursor-pointer transition-all duration-200 
                                       hover:border-blue-300 hover:shadow-sm
                                       peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 peer-checked:shadow-md">
-                            <span class="text-sm font-semibold">{{ radio.choice_label }}</span>
+                            <span class="text-sm font-semibold">{{radio.choice_label}}</span>
                         </label>
                     </div>
-                    {% endfor %}
+                    {%endfor%}
                 </div>
             </div>
 
             <!-- Participants - FIXED -->
             <div class="space-y-4">
                 <label class="block text-sm font-semibold text-gray-700">
-                    {{ form.participants.label }}
+                    {{form.participants.label}}
                 </label>
                 <div class="max-h-60 overflow-y-auto bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
-                    {% for checkbox in form.participants %}
+                    {%for checkbox in form.participants%}
                     <div>
-                        <input type="checkbox" name="{{ form.participants.name }}" value="{{ checkbox.data.value }}" 
-                               id="{{ checkbox.id_for_label }}" 
-                               class="hidden peer"
-                               {% if checkbox.data.selected %}checked{% endif %}>
-                        <label for="{{ checkbox.id_for_label }}" 
-                               class="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer transition-colors duration-200 
+                        <input type="checkbox" name="{{form.participants.name}}" value="{{checkbox.data.value}}"
+                            id="{{checkbox.id_for_label}}" class="hidden peer" {%if checkbox.data.selected%}checked{%endif%}>
+                        <label for="{{checkbox.id_for_label}}" class="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer transition-colors duration-200 
                                       hover:border-blue-300 peer-checked:border-blue-500 peer-checked:bg-blue-50">
-                            <span class="text-sm font-medium text-gray-700 flex-1">{{ checkbox.choice_label }}</span>
-                            <div class="w-4 h-4 border-2 border-gray-300 rounded peer-checked:bg-blue-500 peer-checked:border-blue-500 peer-checked:flex peer-checked:items-center peer-checked:justify-center">
+                            <span class="text-sm font-medium text-gray-700 flex-1">{{checkbox.choice_label}}</span>
+                            <div
+                                class="w-4 h-4 border-2 border-gray-300 rounded peer-checked:bg-blue-500 peer-checked:border-blue-500 peer-checked:flex peer-checked:items-center peer-checked:justify-center">
                                 <i class="fa-solid fa-check text-white text-xs hidden peer-checked:block"></i>
                             </div>
                         </label>
                     </div>
-                    {% endfor %}
+                    {%endfor%}
                 </div>
+            </div>
+
+            <!-- Status - NEW ADDITION TO PREVENT VALIDATION ERROR -->
+            <div class="space-y-4">
+                <label class="block text-sm font-semibold text-gray-700">
+                    {{form.status.label}}
+                </label>
+                {{form.status}}
             </div>
 
             <!-- Action Buttons -->
             <div class="flex items-center justify-between pt-8 border-t border-gray-200">
                 <div class="text-sm text-gray-500 flex items-center">
                     <i class="fa-solid fa-info-circle mr-2"></i>
-                    {% if form.instance.pk %}
-                    Last updated: {{ form.instance.updated_at|date:"M d, Y" }}
-                    {% else %}
+                    {%if form.instance.pk%}
+                    Last updated: {{form.instance.updated_at|date:"M d, Y"}}
+                    {%else%}
                     All fields are required
-                    {% endif %}
+                    {%endif%}
                 </div>
-                
+
                 <div class="flex items-center space-x-3">
-                    <a href="{% url 'meeting_list' %}" class="inline-flex items-center justify-center py-2.5 px-6 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md">
+                    <a href="{%url 'meeting_list'%}"
+                        class="inline-flex items-center justify-center py-2.5 px-6 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md">
                         <i class="fa-solid fa-arrow-left mr-2"></i>
                         Back to Meetings
                     </a>
-                    <button type="submit" class="inline-flex items-center justify-center py-2.5 px-6 border border-transparent rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+                    <button type="submit"
+                        class="inline-flex items-center justify-center py-2.5 px-6 border border-transparent rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl">
                         <i class="fa-solid fa-save mr-2"></i>
-                        {% if form.instance.pk %}Update Meeting{% else %}Create Meeting{% endif %}
+                        {%if form.instance.pk%}Update Meeting{%else%}Create Meeting{%endif%}
                     </button>
                 </div>
             </div>
+
+            {%if form.errors%}
+            <div class="mt-4 p-4 bg-red-50 rounded-xl border border-red-200">
+                <h4 class="text-red-800 font-semibold mb-2">Please correct the following errors:</h4>
+                <div class="text-sm text-red-600">
+                    {{form.errors}}
+                </div>
+            </div>
+            {%endif%}
         </form>
     </div>
 
     <!-- Help Card -->
-    
+
 </div>
 
 <!-- Form fields er default styling improve korar jonno - CSS chara -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Form fields ke better styling diye
-    const style = document.createElement('style');
-    style.textContent = `
+    document.addEventListener('DOMContentLoaded', function () {
+        // Form fields ke better styling diye
+        const style = document.createElement('style');
+        style.textContent = `
         input, select, textarea {
             width: 100%;
             padding: 0.75rem 1rem;
@@ -169,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
             border-color: #3b82f6;
         }
     `;
-    document.head.appendChild(style);
-});
+        document.head.appendChild(style);
+    });
 </script>
-{% endblock %}
+{%endblock%}

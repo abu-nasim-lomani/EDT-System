@@ -2,8 +2,9 @@
 
 import json
 import os
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from .models import ChatConversation, ChatMessage
@@ -12,43 +13,29 @@ from core.utils import is_pm_user, is_sm_user
 from django.core.exceptions import PermissionDenied
 
 try:
-    import google.generativeai as genai
-    GEMINI_AVAILABLE = True
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
 except ImportError:
-    GEMINI_AVAILABLE = False
+    OPENAI_AVAILABLE = False
 
 
-def get_gemini_client(model_name='gemini-2.5-pro'):
+def get_openai_client():
     """
-    Initialize and return Gemini client
-    
+    Initialize and return OpenAI client.
+
     Available models:
-    - 'gemini-2.5-pro': Best for complex tasks, longer context
-    - 'gemini-2.5-flash': Faster responses, good for most tasks
+    - 'gpt-4o'       : Best quality, latest flagship
+    - 'gpt-4o-mini'  : Faster & cheaper, great for most tasks
+    - 'gpt-3.5-turbo': Budget option
     """
-    if not GEMINI_AVAILABLE:
+    if not OPENAI_AVAILABLE:
         return None
-    
-    api_key = os.environ.get('GEMINI_API_KEY')
+
+    api_key = os.environ.get('OPENAI_API_KEY')
     if not api_key:
         return None
-    
-    genai.configure(api_key=api_key)
-    
-    # Use Gemini 2.5 models
-    valid_models = ['gemini-2.5-pro', 'gemini-2.5-flash']
-    if model_name not in valid_models:
-        model_name = 'gemini-2.5-pro'  # Default to pro
-    
-    try:
-        return genai.GenerativeModel(model_name)
-    except Exception:
-        # Fallback to gemini-2.5-flash if pro is not available
-        try:
-            return genai.GenerativeModel('gemini-2.5-flash')
-        except Exception:
-            # Last fallback to older model
-            return genai.GenerativeModel('gemini-pro')
+
+    return OpenAI(api_key=api_key)
 
 
 @login_required
@@ -62,16 +49,28 @@ def chat_message(request):
             'conversation_id': None,
             'messages': []
         }, status=403, content_type='application/json')
-    
+
     if request.method == 'GET':
-        # Get or create conversation
-        conversation, created = ChatConversation.objects.get_or_create(
-            user=request.user,
-            defaults={'title': f'Chat {timezone.now().strftime("%Y-%m-%d %H:%M")}'}
-        )
+        # Don't auto-create conversations. Just get the most recent one.
+        conversation_id = request.GET.get('conversation_id')
         
+        if conversation_id:
+            try:
+                conversation = ChatConversation.objects.get(id=conversation_id, user=request.user)
+            except ChatConversation.DoesNotExist:
+                conversation = ChatConversation.objects.filter(user=request.user).order_by('-updated_at').first()
+        else:
+            conversation = ChatConversation.objects.filter(user=request.user).order_by('-updated_at').first()
+
+        
+        if not conversation:
+            return JsonResponse({
+                'conversation_id': None,
+                'messages': []
+            })
+
         # Get recent messages
-        messages = conversation.messages.all()[:20]  # Last 20 messages
+        messages = conversation.messages.all()[:50]  # Last 50 messages
         messages_data = [
             {
                 'role': msg.role,
@@ -80,21 +79,22 @@ def chat_message(request):
             }
             for msg in messages
         ]
-        
+
         return JsonResponse({
             'conversation_id': conversation.id,
             'messages': messages_data
         })
-    
+
     elif request.method == 'POST':
         try:
             data = json.loads(request.body)
             message_content = data.get('message', '').strip()
             conversation_id = data.get('conversation_id')
-            
+            voice_mode = data.get('voice_mode', False)  # True when user spoke via mic
+
             if not message_content:
                 return JsonResponse({'error': 'Message cannot be empty'}, status=400)
-            
+
             # Get or create conversation
             if conversation_id:
                 try:
@@ -103,19 +103,30 @@ def chat_message(request):
                     conversation = ChatConversation.objects.create(user=request.user)
             else:
                 conversation = ChatConversation.objects.create(user=request.user)
-            
+
             # Save user message
             user_message = ChatMessage.objects.create(
                 conversation=conversation,
                 role=ChatMessage.MessageRole.USER,
                 content=message_content
             )
-            
+
             # Get user context
             user_context = get_user_context(request.user)
             system_prompt = build_system_prompt(user_context)
-            
-            # Prepare context for Gemini
+
+            # Voice mode: make the AI sound like a real human speaking
+            if voice_mode:
+                system_prompt += (
+                    "\n\n[VOICE MODE ACTIVE] You are speaking aloud to the user. "
+                    "Respond in a warm, natural, conversational tone — like a knowledgeable colleague speaking. "
+                    "Keep replies to 1-3 short, clear sentences. "
+                    "Never use markdown formatting (no bullet points, asterisks, dashes, or headers). "
+                    "Do not say things like 'As an AI' or 'Certainly!'. "
+                    "Speak directly and naturally, as if in a real conversation."
+                )
+
+            # Prepare context text
             context_text = f"""
 User Context:
 - Role: {user_context['user_role']}
@@ -132,37 +143,37 @@ Recent Tasks:
 
 Recent Events:
 {json.dumps(user_context.get('events', [])[:10], indent=2)}
+
+Scheduled Meetings:
+{json.dumps(user_context.get('meetings', [])[:10], indent=2)}
 """
-            
-            # Get conversation history
+
+            # Get conversation history for OpenAI messages list
             recent_messages = conversation.messages.all()[:10]
             conversation_history = []
             for msg in recent_messages:
+                role = msg.role if msg.role in ('user', 'assistant') else 'user'
                 conversation_history.append({
-                    'role': msg.role,
-                    'parts': [msg.content]
+                    'role': role,
+                    'content': msg.content
                 })
-            
+
             # Try command handler first (for CRUD operations and navigation)
             from .command_handler import process_chat_command
             command_result = process_chat_command(request.user, user_context, message_content)
-            
+
             if command_result:
-                # Command was executed
                 if command_result.get('success'):
                     assistant_response = command_result.get('message', 'Command executed successfully.')
-                    # Store command metadata
                     metadata = {
                         'command_executed': True,
                         'entity_type': command_result.get('entity_type'),
                         'entity_id': command_result.get('entity_id')
                     }
-                    
-                    # Add navigation URL if it's a navigation command
                     if command_result.get('navigate'):
                         metadata['navigate'] = True
                         metadata['url'] = command_result.get('url')
-                    
+
                     assistant_message = ChatMessage.objects.create(
                         conversation=conversation,
                         role=ChatMessage.MessageRole.ASSISTANT,
@@ -176,7 +187,7 @@ Recent Events:
                         role=ChatMessage.MessageRole.ASSISTANT,
                         content=assistant_response
                     )
-                
+
                 conversation.save()
                 response_data = {
                     'conversation_id': conversation.id,
@@ -184,65 +195,158 @@ Recent Events:
                     'timestamp': assistant_message.timestamp.isoformat(),
                     'command_executed': True
                 }
-                
-                # Add navigation URL if it's a navigation command
                 if command_result.get('navigate'):
                     response_data['navigate'] = True
                     response_data['url'] = command_result.get('url')
-                
+
                 return JsonResponse(response_data)
-            
-            # Try rule-based response (works without AI) - only if not a navigation command
+
+            # Try rule-based response (works without AI)
             from .response_handler import get_rule_based_response
             rule_based_response = get_rule_based_response(user_context, message_content, request.user)
-            
+
             if rule_based_response:
-                # Use rule-based response (no AI needed)
                 assistant_response = rule_based_response
             else:
-                # Try AI if available
-                preferred_model = data.get('model', os.environ.get('GEMINI_MODEL', 'gemini-2.5-pro'))
-                client = get_gemini_client(model_name=preferred_model)
-                
+                # Use OpenAI API
+                preferred_model = data.get('model', os.environ.get('OPENAI_MODEL', 'gpt-4o-mini'))
+                client = get_openai_client()
+
                 if client:
-                    # Build prompt with system instructions
                     username = user_context.get('username', user_context['user_name'])
                     user_role_display = 'SM user' if is_sm_user(request.user) else 'PM user' if is_pm_user(request.user) else 'user'
-                    full_prompt = f"{system_prompt}\n\n{context_text}\n\nUser Question: {message_content}\n\nProvide a direct, concise answer addressing the {user_role_display} ({username}) by saying '{user_role_display}' or '{username}'. Use only the context data provided above."
-                    
+
+                    # Build OpenAI messages array
+                    openai_messages = [
+                        {
+                            'role': 'system',
+                            'content': f"{system_prompt}\n\n{context_text}"
+                        }
+                    ]
+                    # Add conversation history
+                    openai_messages.extend(conversation_history)
+                    # Add current user message
+                    openai_messages.append({
+                        'role': 'user',
+                        'content': f"User Question: {message_content}\n\nProvide a direct, concise answer addressing the {user_role_display} ({username}). Use only the context data provided above."
+                    })
+
                     try:
-                        response = client.generate_content(full_prompt)
-                        assistant_response = response.text
+                        response = client.chat.completions.create(
+                            model=preferred_model,
+                            messages=openai_messages,
+                            max_tokens=1000,
+                            temperature=0.7,
+                        )
+                        assistant_response = response.choices[0].message.content
                     except Exception as e:
                         assistant_response = f"Error: {str(e)}"
                 else:
-                    # No AI available and no rule-based match - return None to indicate no response
                     return JsonResponse({
-                        'error': 'Unable to process this query. Please ask about projects, tasks, events, or dashboard statistics.',
+                        'error': 'OpenAI API key not configured. Please set OPENAI_API_KEY in .env file.',
                         'conversation_id': conversation.id,
                         'messages': []
                     }, status=400, content_type='application/json')
-            
+
             # Save assistant message
             assistant_message = ChatMessage.objects.create(
                 conversation=conversation,
                 role=ChatMessage.MessageRole.ASSISTANT,
                 content=assistant_response
             )
-            
-            # Update conversation timestamp
+
             conversation.save()
-            
+
             return JsonResponse({
                 'conversation_id': conversation.id,
                 'response': assistant_response,
                 'timestamp': assistant_message.timestamp.isoformat()
             })
-            
+
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON'}, status=400)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def stt_view(request):
+    """
+    Speech-to-Text using OpenAI Whisper.
+    Accepts a multipart audio file, returns {"transcript": "..."}.
+    Whisper auto-detects language — supports Bengali + English.
+    """
+    if not (is_pm_user(request.user) or is_sm_user(request.user)):
+        return JsonResponse({'error': 'Access denied'}, status=403)
+
+    audio_file = request.FILES.get('audio')
+    if not audio_file:
+        return JsonResponse({'error': 'No audio file provided'}, status=400)
+
+    api_key = os.environ.get('OPENAI_API_KEY')
+    if not api_key or not OPENAI_AVAILABLE:
+        return JsonResponse({'error': 'OpenAI API not configured'}, status=400)
+
+    try:
+        client = OpenAI(api_key=api_key)
+        # Give file a name hint so Whisper knows it's an audio file
+        audio_file.name = audio_file.name or 'audio.webm'
+        transcript = client.audio.transcriptions.create(
+            model='whisper-1',
+            file=audio_file,
+            # language=None → auto-detect (Bengali, English, etc.)
+        )
+        return JsonResponse({'transcript': transcript.text})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def tts_view(request):
+    """
+    Text-to-Speech using OpenAI TTS-HD.
+    Accepts JSON {"text": "...", "voice": "shimmer"} and streams back MP3 audio.
+    HD voices (most natural): shimmer (warm female), nova (energetic), alloy (neutral male)
+    """
+    if not (is_pm_user(request.user) or is_sm_user(request.user)):
+        return HttpResponse('Access denied', status=403)
+
+    try:
+        data = json.loads(request.body)
+        raw_text = data.get('text', '').strip()
+        voice = data.get('voice', 'shimmer')  # shimmer = warmest, most human-sounding
+        if not raw_text:
+            return HttpResponse('No text provided', status=400)
+
+        # Clean markdown/symbols so TTS sounds natural
+        import re
+        clean = re.sub(r'[*_`#>~|]', '', raw_text)          # remove markdown chars
+        clean = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', clean)  # [text](url) → text
+        clean = re.sub(r'\n{2,}', '. ', clean)               # double newlines → pause
+        clean = re.sub(r'\n', ' ', clean)                    # single newline → space
+        clean = re.sub(r' {2,}', ' ', clean).strip()         # collapse spaces
+        clean = clean[:2000]  # keep under limit
+
+        api_key = os.environ.get('OPENAI_API_KEY')
+        if not api_key or not OPENAI_AVAILABLE:
+            return HttpResponse('OpenAI API not configured', status=400)
+
+        client = OpenAI(api_key=api_key)
+        response = client.audio.speech.create(
+            model='tts-1-hd',   # HD = much more natural and human-like
+            voice=voice,
+            input=clean,
+            response_format='mp3',
+            speed=0.95,         # slightly slower = more natural speech cadence
+        )
+        audio_bytes = response.read()
+        return HttpResponse(audio_bytes, content_type='audio/mpeg')
+    except json.JSONDecodeError:
+        return HttpResponse('Invalid JSON', status=400)
+    except Exception as e:
+        return HttpResponse(str(e), status=500)
 
 
 @login_required
@@ -251,7 +355,7 @@ def chat_conversations(request):
     """Get list of user's conversations"""
     if not (is_pm_user(request.user) or is_sm_user(request.user)):
         return JsonResponse({'error': 'Access denied'}, status=403)
-    
+
     conversations = ChatConversation.objects.filter(user=request.user).order_by('-updated_at')[:10]
     conversations_data = [
         {
@@ -263,8 +367,19 @@ def chat_conversations(request):
         }
         for conv in conversations
     ]
-    
+
     return JsonResponse({'conversations': conversations_data})
+
+
+@login_required
+def chat_page(request):
+    """Render the full-page chat UI"""
+    from django.shortcuts import render, redirect
+    if not (is_pm_user(request.user) or is_sm_user(request.user)):
+        from django.contrib import messages
+        messages.warning(request, 'The AI Assistant is only available for PM and SM users.')
+        return redirect('meeting_list')
+    return render(request, 'chatbot/chat.html')
 
 
 @login_required
@@ -273,12 +388,12 @@ def new_conversation(request):
     """Create a new conversation"""
     if not (is_pm_user(request.user) or is_sm_user(request.user)):
         return JsonResponse({'error': 'Access denied'}, status=403)
-    
+
     conversation = ChatConversation.objects.create(
         user=request.user,
         title=f'Chat {timezone.now().strftime("%Y-%m-%d %H:%M")}'
     )
-    
+
     return JsonResponse({
         'conversation_id': conversation.id,
         'title': conversation.title

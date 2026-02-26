@@ -77,14 +77,28 @@ def get_user_context(user):
                 'end_datetime': str(event.end_datetime) if event.end_datetime else None,
                 'status': event.status,
             })
+            
+        meetings_data = []
+        all_meetings = Meeting.objects.filter(participants=user).distinct()
+        for meeting in all_meetings[:30]:
+            meetings_data.append({
+                'id': meeting.id,
+                'title': meeting.title,
+                'type': meeting.meeting_type,
+                'start_datetime': str(meeting.meeting_time),
+                'duration_mins': meeting.duration,
+                'status': meeting.status,
+            })
         
         context.update({
             'projects': projects_data,
             'tasks': tasks_data,
             'events': events_data,
+            'meetings': meetings_data,
             'total_projects': pm_projects.count(),
             'total_tasks': all_tasks.count(),
             'total_events': all_events.count(),
+            'total_meetings': all_meetings.count(),
         })
     
     elif is_sm_user(user):
@@ -92,6 +106,7 @@ def get_user_context(user):
         all_projects = Project.objects.all()
         all_tasks = Task.objects.all()
         all_events = Event.objects.all()
+        all_meetings = Meeting.objects.all()
         
         projects_data = []
         for project in all_projects:
@@ -129,15 +144,27 @@ def get_user_context(user):
                 'start_datetime': str(event.start_datetime),
                 'status': event.status,
             })
+            
+        meetings_data = []
+        for meeting in all_meetings[:50]:  # Limit to recent 50 meetings
+            meetings_data.append({
+                'id': meeting.id,
+                'title': meeting.title,
+                'type': meeting.meeting_type,
+                'start_datetime': str(meeting.meeting_time),
+                'status': meeting.status,
+            })
         
         # Organization-wide stats
         context.update({
             'projects': projects_data,
             'tasks': tasks_data,
             'events': events_data,
+            'meetings': meetings_data,
             'total_projects': all_projects.count(),
             'total_tasks': all_tasks.count(),
             'total_events': all_events.count(),
+            'total_meetings': all_meetings.count(),
             'total_users': User.objects.count(),
             'completed_tasks': all_tasks.filter(status='COMPLETED').count(),
             'pending_tasks': all_tasks.filter(status='PENDING').count(),
@@ -152,6 +179,9 @@ def build_system_prompt(user_context):
     user_name = user_context['user_name']
     
     username = user_context.get('username', user_name)
+    current_datetime_str = timezone.localtime().strftime("%A, %B %d, %Y %I:%M %p")
+    
+    base_info = f"\n\n[CRITICAL DATE INFO] Today's true, real-world current date and time is: {current_datetime_str}. All of your answers regarding 'today', 'tomorrow', 'this week', etc. MUST be relative to this date."
     
     if role == 'PM':
         prompt = f"""You are a Project Management Assistant helping a PM user (username: {username}).
@@ -180,13 +210,14 @@ Available data:
 - {user_context.get('total_projects', 0)} projects managed by this PM user
 - {user_context.get('total_tasks', 0)} tasks across these projects
 - {user_context.get('total_events', 0)} events related to these projects
+- {user_context.get('total_meetings', 0)} meetings scheduled
 
 When answering:
 - Start with "PM user, " or "{username}, "
 - Provide only the requested information
 - Use bullet points or numbered lists when appropriate
 - Reference specific project/task names and IDs from the context when available
-- If user wants to perform an action, guide them on the command format"""
+- If user wants to perform an action, guide them on the command format{base_info}"""
     
     elif role == 'SM':
         prompt = f"""You are a Senior Management Assistant helping an SM user (username: {username}).
@@ -215,6 +246,7 @@ Available data:
 - {user_context.get('total_projects', 0)} projects across the organization
 - {user_context.get('total_tasks', 0)} total tasks
 - {user_context.get('total_events', 0)} total events
+- {user_context.get('total_meetings', 0)} total meetings
 - {user_context.get('total_users', 0)} team members
 
 When answering:
@@ -222,10 +254,10 @@ When answering:
 - Provide only the requested information
 - Use bullet points or numbered lists when appropriate
 - Focus on key metrics and actionable insights
-- If user wants to perform an action, guide them on the command format"""
+- If user wants to perform an action, guide them on the command format{base_info}"""
     
     else:
-        prompt = f"""You are a helpful assistant for {username}. Always address the user as "{username}". Be concise and direct."""
+        prompt = f"""You are a helpful assistant for {username}. Always address the user as "{username}". Be concise and direct.{base_info}"""
     
     return prompt
 

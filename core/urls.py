@@ -14,4 +14,6 @@ urlpatterns = [
     path('management-dashboard/', views.management_dashboard, name='management_dashboard'),
     path('management-report/', views.management_report, name='management_report'), 
     path('management-report/manager/<int:manager_id>/', views.management_report, name='manager_report'), 
+    path('notifications/read/<int:notification_id>/', views.mark_notification_read, name='mark_notification_read'),
+    path('calendar/', views.calendar_view, name='calendar'),
 ]

@@ -1,0 +1,163 @@
+{% extends 'theme/base.html' %}
+
+{% block title %}Routine Calendar{% endblock %}
+{% block page_title %}Routine Calendar{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header/Filters (Optional future expansion) -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+        <div>
+            <h2 class="text-xl font-bold text-gray-900">Your Schedule Overview</h2>
+            <p class="text-sm text-gray-500">All your upcoming meetings and events in one place.</p>
+        </div>
+        <div class="flex space-x-3">
+            <span class="inline-flex items-center text-xs font-medium text-gray-600">
+                <span class="w-3 h-3 rounded-full bg-indigo-500 mr-1.5"></span> Meetings
+            </span>
+            <span class="inline-flex items-center text-xs font-medium text-gray-600">
+                <span class="w-3 h-3 rounded-full bg-emerald-500 mr-1.5"></span> Events
+            </span>
+        </div>
+    </div>
+
+    <!-- Calendar Container -->
+    <div class="bg-white rounded-xl shadow-sm border p-4 sm:p-6">
+        <div id="calendar" class="min-h-[600px]"></div>
+    </div>
+</div>
+
+<!-- FullCalendar Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var calendarEl = document.getElementById('calendar');
+
+        // Data injected from Django view
+        var eventsData = JSON.parse('{{ events_json|escapejs }}');
+
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+            },
+            events: eventsData,
+            height: 'auto',
+            navLinks: true, // can click day/week names to navigate views
+            nowIndicator: true, // shows current time line in week/day views
+            dayMaxEvents: true, // allow "more" link when too many events
+            eventClick: function (info) {
+                // When an event is clicked, can either open modal or navigate
+                if (info.event.url) {
+                    window.location.href = info.event.url;
+                    info.jsEvent.preventDefault(); // don't let the browser navigate directly
+                }
+            },
+            eventDidMount: function (info) {
+                // Optional: add tooltips using tippy.js or just native browser title
+                if (info.event.extendedProps.type) {
+                    var extraText = "";
+                    if (info.event.extendedProps.type === 'Meeting') {
+                        extraText = "Status: " + info.event.extendedProps.status;
+                    } else if (info.event.extendedProps.type === 'Event') {
+                        extraText = "Location: " + info.event.extendedProps.location;
+                    }
+                    info.el.title = info.event.extendedProps.type + " - " + extraText;
+                }
+            }
+        });
+
+        calendar.render();
+    });
+</script>
+
+<style>
+    /* FullCalendar Custom Overrides to match Tailwind Theme */
+    .fc-theme-standard .fc-scrollgrid {
+        border-color: #f1f5f9;
+        /* slate-100 */
+    }
+
+    .fc-theme-standard td,
+    .fc-theme-standard th {
+        border-color: #f1f5f9;
+    }
+
+    .fc-col-header-cell {
+        padding: 12px 0 !important;
+        background-color: #f8fafc;
+        /* slate-50 */
+        color: #475569;
+        /* slate-600 */
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
+    .fc-daygrid-day-number {
+        color: #64748b;
+        /* slate-500 */
+        font-size: 0.875rem;
+        padding: 8px !important;
+    }
+
+    .fc-event {
+        cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        transition: opacity 0.2s;
+        border: none;
+    }
+
+    .fc-event:hover {
+        opacity: 0.9;
+    }
+
+    .fc .fc-button-primary {
+        background-color: #f1f5f9 !important;
+        border-color: #e2e8f0 !important;
+        color: #475569 !important;
+        text-transform: capitalize;
+        font-weight: 500;
+        box-shadow: none !important;
+    }
+
+    .fc .fc-button-primary:not(:disabled):active,
+    .fc .fc-button-primary:not(:disabled).fc-button-active {
+        background-color: #e2e8f0 !important;
+        border-color: #cbd5e1 !important;
+        color: #1e293b !important;
+    }
+
+    .fc .fc-button-primary:hover {
+        background-color: #e2e8f0 !important;
+    }
+
+    .fc .fc-toolbar-title {
+        font-size: 1.25rem !important;
+        font-weight: 700 !important;
+        color: #0f172a !important;
+        /* slate-900 */
+    }
+
+    .fc .fc-day-today {
+        background-color: #f0fdf4 !important;
+        /* green-50 for subtle highlight */
+    }
+
+    /* Make toolbar responsive */
+    @media (max-width: 640px) {
+        .fc .fc-toolbar {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .fc .fc-toolbar-title {
+            font-size: 1.125rem !important;
+        }
+    }
+</style>
+{% endblock %}
